@@ -12,15 +12,12 @@ import type {
   GridCell,
   Corridor,
   FAIData,
-  DroneModel,
   DashboardStats,
   WindRoseSector,
   TestCase,
   TestSuite,
   TestResults,
   CoverageModule,
-  HeightOption,
-  MapLayers,
 } from '../../api/types';
 
 describe('PointQuery type', () => {

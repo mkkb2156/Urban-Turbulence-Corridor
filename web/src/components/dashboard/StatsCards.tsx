@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react';
 import { Wind, Grid3x3, Route, Activity } from 'lucide-react';
 import clsx from 'clsx';
 import type { DashboardStats } from '../../api/types';
@@ -12,7 +13,7 @@ interface StatCardData {
   label: string;
   value: string;
   subtext?: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   color: string;
 }
 

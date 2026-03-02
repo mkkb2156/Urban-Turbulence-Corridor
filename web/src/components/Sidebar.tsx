@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
   Wind,
@@ -19,7 +20,7 @@ interface SidebarProps {
 
 interface NavItem {
   to: string;
-  icon: React.ComponentType<{ size?: number }>;
+  icon: LucideIcon;
   label: string;
   badge?: React.ReactNode;
 }

@@ -146,7 +146,7 @@ describe('gridCellPolygon', () => {
 
   it('should create a square centered on the given point', () => {
     const polygon = gridCellPolygon(121.55, 25.03, 0.01);
-    const [sw, se, ne, nw] = polygon;
+    const [sw, _se, ne] = polygon;
     // Southwest corner
     expect(sw[0]).toBeCloseTo(121.545, 4);
     expect(sw[1]).toBeCloseTo(25.025, 4);

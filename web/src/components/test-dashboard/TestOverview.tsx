@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react';
 import { CheckCircle, XCircle, MinusCircle, Clock } from 'lucide-react';
 import clsx from 'clsx';
 import type { TestResults } from '../../api/types';
@@ -13,7 +14,7 @@ interface OverviewStat {
   label: string;
   value: number;
   color: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
 }
 
 export default function TestOverview({ results, isLoading }: TestOverviewProps) {
@@ -87,7 +88,7 @@ export default function TestOverview({ results, isLoading }: TestOverviewProps) 
                     : stat.value}
                 </p>
               </div>
-              <stat.icon size={20} style={{ color: stat.color }} />
+              <stat.icon size={20} color={stat.color} />
             </div>
           </div>
         ))}

@@ -142,7 +142,8 @@ class TestComputeRoughnessParams:
 
         result = compute_roughness_params(grid, empty)
         # 所有無建物網格 z0 = 0.03
-        assert all(result["z0"] == pytest.approx(0.03, abs=0.001))
+        for z0_val in result["z0"]:
+            assert z0_val == pytest.approx(0.03, abs=0.001)
 
     def test_no_buildings_zd_zero(self, sample_grid):
         """無建物區域 zd 應為 0。"""
