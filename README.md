@@ -15,10 +15,12 @@ UTC 從開放資料自動計算城市風廊與風險等級：
 ## 快速開始
 
 ```bash
-# 建立虛擬環境
+# 建立虛擬環境（請在專案根目錄執行）
 uv venv
 source .venv/bin/activate
 uv pip install -e ".[dev]"
+# 若上面失敗，可改為：uv pip install geopandas 等依賴後再跑測試
+# 注意：uv 指令後勿在同一行加註解，會出現 Failed to parse: # 錯誤
 
 # 設定環境變數
 cp .env.example .env
@@ -29,6 +31,23 @@ python scripts/run_pipeline.py --city taipei --grid-size 100
 
 # 執行測試
 pytest tests/ -v
+```
+
+## 開發指令
+
+```bash
+# 啟動前端開發伺服器
+cd web && npm run dev        # http://localhost:3000
+
+# 啟動 Vitest UI（瀏覽器測試介面）
+cd web && npm run test:ui    # http://localhost:51204/__vitest__/
+
+# 執行所有測試（前後端）
+bash scripts/run_tests.sh all
+
+# Watch mode
+bash scripts/run_tests.sh watch-backend    # pytest watch
+bash scripts/run_tests.sh watch-frontend   # vitest --ui
 ```
 
 ## 目前階段

@@ -7,6 +7,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 REPORT_DIR="$PROJECT_ROOT/data/output/test-reports"
+PYTHON="${PROJECT_ROOT}/.venv/bin/python"
+if [ ! -x "$PYTHON" ]; then
+    PYTHON=python
+fi
 
 mkdir -p "$REPORT_DIR"
 
@@ -14,7 +18,7 @@ run_backend() {
     echo "=== Running Backend Tests (pytest) ==="
     cd "$PROJECT_ROOT"
 
-    python -m pytest tests/ \
+    "$PYTHON" -m pytest tests/ \
         -v --tb=short \
         --json-report="$REPORT_DIR/pytest-results.json" \
         -p tests.pytest_json_report \
@@ -46,7 +50,7 @@ run_frontend() {
 run_watch_backend() {
     echo "=== Backend Test Watch Mode ==="
     cd "$PROJECT_ROOT"
-    python -m pytest_watch tests/ -- -v --tb=short
+    "$PYTHON" -m pytest_watch tests/ -- -v --tb=short
 }
 
 run_watch_frontend() {
