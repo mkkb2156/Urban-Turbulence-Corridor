@@ -7,8 +7,12 @@ from __future__ import annotations
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 import pytest
-from shapely.geometry import Polygon, box
+from shapely.geometry import LineString, Polygon, box
+
+# 自動載入 JSON 報告 plugin
+pytest_plugins = ["tests.pytest_json_report"]
 
 
 @pytest.fixture
@@ -126,3 +130,81 @@ def empty_buildings() -> gpd.GeoDataFrame:
         geometry="geometry",
         crs="EPSG:3826",
     )
+
+
+@pytest.fixture
+def grid_with_bcr(sample_grid, sample_buildings) -> gpd.GeoDataFrame:
+    """含 BCR 的網格（供需要 BCR 的測試使用）。"""
+    from src.morphology.bcr import compute_bcr
+
+    return compute_bcr(sample_buildings, sample_grid)
+
+
+@pytest.fixture
+def grid_with_fai(sample_grid, sample_buildings) -> gpd.GeoDataFrame:
+    """含 FAI 的網格。"""
+    from src.morphology.fai import compute_fai_all_directions
+
+    return compute_fai_all_directions(sample_buildings, sample_grid)
+
+
+@pytest.fixture
+def grid_with_morphology(sample_grid, sample_buildings) -> gpd.GeoDataFrame:
+    """含完整形態學指標的網格（BCR + FAI + roughness）。"""
+    from src.morphology.bcr import compute_bcr
+    from src.morphology.fai import compute_fai_all_directions
+    from src.morphology.roughness import compute_roughness_params
+
+    grid = compute_bcr(sample_buildings, sample_grid)
+    grid = compute_fai_all_directions(sample_buildings, grid)
+    grid = compute_roughness_params(grid, sample_buildings, fai_col="fai_ne")
+    return grid
+
+
+@pytest.fixture
+def sample_wind_data() -> pd.DataFrame:
+    """測試用風場觀測資料（模擬台北站 1 年資料）。"""
+    np.random.seed(42)
+    n = 1000
+    # 台北東北季風為主
+    directions = np.concatenate([
+        np.random.normal(35, 20, n // 2) % 360,  # NE monsoon
+        np.random.normal(210, 30, n // 4) % 360,  # SW monsoon
+        np.random.uniform(0, 360, n // 4),  # transition
+    ])
+    speeds = np.abs(np.random.normal(4.5, 2.5, n))
+    months = np.concatenate([
+        np.random.choice([10, 11, 12, 1, 2, 3, 4], n // 2),
+        np.random.choice([6, 7, 8, 9], n // 4),
+        np.random.choice([5, 9, 10], n // 4),
+    ])
+    dates = pd.to_datetime([f"2024-{m:02d}-15 12:00" for m in months])
+
+    return pd.DataFrame({
+        "wind_speed": speeds,
+        "wind_direction": directions,
+        "observation_time": dates,
+        "station_id": "466920",
+    })
+
+
+@pytest.fixture
+def sample_corridors() -> gpd.GeoDataFrame:
+    """測試用風廊資料。"""
+    origin_x, origin_y = 300000, 2770000
+
+    corridors = gpd.GeoDataFrame(
+        {
+            "corridor_id": ["c001", "c002", "c003"],
+            "total_cost": [10.5, 25.3, 50.0],
+            "length_cells": [8, 6, 3],
+            "wind_direction": ["northeast", "northeast", "southwest"],
+        },
+        geometry=[
+            LineString([(origin_x, origin_y + 50), (origin_x + 200, origin_y + 50)]),
+            LineString([(origin_x + 50, origin_y), (origin_x + 50, origin_y + 250)]),
+            LineString([(origin_x + 250, origin_y + 200), (origin_x + 100, origin_y + 250)]),
+        ],
+        crs="EPSG:3826",
+    )
+    return corridors

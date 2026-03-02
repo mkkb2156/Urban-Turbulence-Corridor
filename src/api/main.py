@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from src.api.routes import corridor, risk, wind
+from src.api.routes import corridor, risk, tests, wind
 from src.api.schemas import HealthResponse
 
 app = FastAPI(
@@ -22,12 +25,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# API routes
 app.include_router(wind.router, prefix="/api/v1", tags=["wind"])
 app.include_router(corridor.router, prefix="/api/v1", tags=["corridors"])
 app.include_router(risk.router, prefix="/api/v1", tags=["risk"])
+app.include_router(tests.router, prefix="/api/v1", tags=["tests"])
 
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """健康檢查。"""
     return HealthResponse()
+
+
+# Serve frontend static files (production build)
+WEB_DIST = Path(__file__).resolve().parent.parent.parent / "web" / "dist"
+if WEB_DIST.exists():
+    app.mount("/", StaticFiles(directory=str(WEB_DIST), html=True), name="frontend")

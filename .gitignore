@@ -44,3 +44,9 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
+
+# Node.js (frontend)
+web/node_modules/
+web/dist/
+web/coverage/
+web/.vitest/
