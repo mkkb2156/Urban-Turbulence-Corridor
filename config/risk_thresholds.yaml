@@ -1,0 +1,46 @@
+# 風險等級門檻定義
+
+risk_levels:
+  green:
+    max_wind_speed: 5.0    # m/s
+    label: "安全"
+    label_en: "Safe"
+    description: "所有無人機可安全作業"
+    color: "#2ecc71"
+    priority: 1
+
+  yellow:
+    max_wind_speed: 8.0    # m/s
+    label: "注意"
+    label_en: "Caution"
+    description: "專業無人機需謹慎，消費級不建議"
+    color: "#f1c40f"
+    priority: 2
+
+  red:
+    max_wind_speed: 12.0   # m/s
+    label: "危險"
+    label_en: "Danger"
+    description: "建議禁飛"
+    color: "#e74c3c"
+    priority: 3
+
+  black:
+    max_wind_speed: null    # > 12 m/s
+    label: "極度危險"
+    label_en: "Extreme Danger"
+    description: "所有無人機禁飛"
+    color: "#2c3e50"
+    priority: 4
+
+# 無人機規格對照
+drone_categories:
+  consumer:
+    description: "消費級無人機（DJI Mini 等）"
+    max_wind_tolerance: 5.0   # m/s
+  professional:
+    description: "專業級無人機（DJI Matrice 等）"
+    max_wind_tolerance: 10.0  # m/s
+  industrial:
+    description: "工業級無人機"
+    max_wind_tolerance: 15.0  # m/s

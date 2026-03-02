@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "utc"
+version = "0.1.0"
+description = "Urban Turbulence Corridor — 台灣城市風廊圖層系統"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+
+dependencies = [
+    # 地理空間處理
+    "geopandas>=0.14",
+    "rasterio>=1.3",
+    "shapely>=2.0",
+    "pyproj>=3.6",
+    "fiona>=1.9",
+    # 都市形態學
+    "momepy>=0.7",
+    "scipy>=1.11",
+    "scikit-image>=0.21",
+    # 數值計算
+    "numpy>=1.25",
+    "pandas>=2.1",
+    "xarray>=2023.10",
+    # 風場模型
+    "windrose>=1.9",
+    # 資料庫
+    "sqlalchemy>=2.0",
+    "geoalchemy2>=0.14",
+    "psycopg2-binary>=2.9",
+    # API 服務
+    "fastapi>=0.104",
+    "uvicorn>=0.24",
+    "redis>=5.0",
+    # 視覺化與輸出
+    "matplotlib>=3.8",
+    "folium>=0.15",
+    "mapclassify>=2.6",
+    # 工具
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "requests>=2.31",
+    "click>=8.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.1",
+    "mypy>=1.7",
+    "ipykernel>=6.26",
+    "jupyter>=1.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "config*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"

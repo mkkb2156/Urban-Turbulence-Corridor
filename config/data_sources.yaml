@@ -1,0 +1,45 @@
+# 資料來源 URL、API key 路徑、更新頻率
+
+nlsc_buildings:
+  description: "國土測繪中心 3D 建物資料"
+  url: "https://maps.nlsc.gov.tw/S09SOA/homePage.action?Language=ZH"
+  format: "WFS/SHP/GML"
+  auth: "NLSC 圖資商店帳號（免費）"
+  fields:
+    geometry: "Polygon（建物輪廓）"
+    height: "BHEIGHT 或 HEIGHT（公尺）"
+  notes: "高度單位為公尺，精度 0.01m；部分舊建物高度缺失"
+
+cwa_weather:
+  description: "中央氣象署風場 API"
+  base_url: "https://opendata.cwa.gov.tw/api/v1/rest/datastore/"
+  auth: "API key（環境變數 CWA_API_KEY）"
+  datasets:
+    auto_station: "O-A0001-001"  # 自動氣象站觀測
+    rain_station: "O-A0003-001"  # 自動雨量站（部分有風資料）
+  fields:
+    wind_speed: "WDSD（平均風速 m/s）"
+    wind_direction: "WDSE（風向角度°）"
+    gust: "GUST（陣風 m/s）"
+  update_frequency: "10 分鐘"
+
+terrain_dtm:
+  description: "20m DTM"
+  url: "https://data.gov.tw/dataset/35430"
+  format: "GeoTIFF"
+
+terrain_dsm:
+  description: "20m DSM"
+  url: "https://data.gov.tw/dataset/175240"
+  format: "GeoTIFF"
+
+terrain_copernicus:
+  description: "Copernicus GLO-30 DEM（備用）"
+  url: "s3://copernicus-dem-30m/"
+  format: "GeoTIFF"
+
+osm:
+  description: "OpenStreetMap 台灣"
+  url: "https://download.geofabrik.de/asia/taiwan.html"
+  format: "PBF"
+  notes: "用 osmnx 或 pyrosm 提取道路網路"
