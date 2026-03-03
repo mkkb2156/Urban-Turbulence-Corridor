@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src.api.routes import corridor, risk, tests, wind
+from src.api.routes import corridor, dashboard, risk, tests, wind
 from src.api.schemas import HealthResponse
 
 app = FastAPI(
@@ -30,6 +30,7 @@ app.include_router(wind.router, prefix="/api/v1", tags=["wind"])
 app.include_router(corridor.router, prefix="/api/v1", tags=["corridors"])
 app.include_router(risk.router, prefix="/api/v1", tags=["risk"])
 app.include_router(tests.router, prefix="/api/v1", tags=["tests"])
+app.include_router(dashboard.router, prefix="/api/v1", tags=["dashboard"])
 
 
 @app.get("/health", response_model=HealthResponse)

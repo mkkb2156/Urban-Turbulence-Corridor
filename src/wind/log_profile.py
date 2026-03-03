@@ -68,13 +68,18 @@ def estimate_friction_velocity(
         摩擦速度 u*（m/s）。
     """
     if z_ref <= zd:
-        # 參考高度低於零平面位移，使用最小合理值
-        zd_adjusted = z_ref * 0.5
+        # Reference height is within the urban canopy layer.
+        # Estimate u* from open-terrain conditions since the reference
+        # wind speed is measured in open terrain (weather station).
+        z0_open = 0.03  # open terrain roughness length
         logger.warning(
-            "Reference height %.1fm <= zd %.1fm, adjusting zd to %.1fm",
-            z_ref, zd, zd_adjusted,
+            "Reference height %.1fm <= zd %.1fm, using open-terrain u* estimation",
+            z_ref, zd,
         )
-        zd = zd_adjusted
+        log_term = np.log(z_ref / z0_open)
+        if log_term <= 0:
+            return 0.1
+        return u_ref * kappa / log_term
 
     log_term = np.log((z_ref - zd) / z0)
     if log_term <= 0:

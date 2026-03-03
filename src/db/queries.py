@@ -116,7 +116,7 @@ def query_corridors_by_city(
 
     sql = f"""
         SELECT corridor_id, corridor_class, total_cost,
-               estimated_width, wind_direction,
+               length_cells,
                ST_Transform(geometry, 4326) AS geometry
         FROM wind_corridors
         WHERE city = '{city}'

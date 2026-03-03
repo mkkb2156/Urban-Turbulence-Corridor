@@ -35,13 +35,15 @@ class WindResponse(BaseModel):
 
 
 class CorridorResponse(BaseModel):
-    """風廊查詢回應。"""
+    """風廊查詢回應 (matches frontend Corridor interface)。"""
 
     corridor_id: str
-    corridor_class: str
-    total_cost: float
-    estimated_width: float | None = None
-    geometry_geojson: dict
+    name: str
+    type: str  # 'primary' | 'secondary'
+    geometry: dict  # GeoJSON LineString
+    mean_wind_speed: float
+    dominant_direction: str
+    risk_level: str
 
 
 class RiskResponse(BaseModel):
@@ -65,3 +67,52 @@ class HealthResponse(BaseModel):
     status: str = "ok"
     version: str = "0.1.0"
     city: str = "taipei"
+
+
+# ─── Dashboard models ─────────────────────────────────────────
+
+
+class DashboardStats(BaseModel):
+    """Dashboard 統計摘要。"""
+
+    total_grids: int = 0
+    risk_distribution: dict = Field(
+        default_factory=lambda: {"green": 0, "yellow": 0, "red": 0, "black": 0},
+    )
+    corridor_count: int = 0
+    mean_wind_speed: float = 0.0
+    monitoring_area_km2: float = 0.0
+    last_updated: str = ""
+
+
+class GridCellResponse(BaseModel):
+    """地圖用網格資料。"""
+
+    grid_id: str
+    lon: float
+    lat: float
+    risk_level: str
+    risk_score: float
+    wind_speed: float
+    wind_direction: str = "NE"
+    is_corridor: bool = False
+
+
+class WindRoseSectorResponse(BaseModel):
+    """風花圖扇區資料。"""
+
+    direction: str
+    angle: float
+    frequency: float
+    mean_speed: float
+
+
+class FAIDataResponse(BaseModel):
+    """FAI 指標資料。"""
+
+    grid_id: str
+    fai_value: float
+    lon: float
+    lat: float
+    terrain_roughness: float
+    building_density: float

@@ -2,24 +2,24 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query as QueryParam
 
 from src.api.schemas import PointQuery, RiskResponse
 
 router = APIRouter()
 
 
-@router.post("/risk", response_model=RiskResponse)
-async def query_risk(query: PointQuery):
-    """查詢指定座標的風險等級。
-
-    返回風速、風險等級、各高度風速、FAI 等綜合資訊。
-    若提供無人機型號，額外返回可飛性評估。
-    """
+def _do_risk_query(
+    lon: float,
+    lat: float,
+    height: float,
+    drone_id: str | None,
+) -> RiskResponse:
+    """Shared logic for POST and GET risk endpoints."""
     from src.db.queries import query_grid_by_point
 
     try:
-        result = query_grid_by_point(query.lon, query.lat)
+        result = query_grid_by_point(lon, lat)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
@@ -31,13 +31,13 @@ async def query_risk(query: PointQuery):
 
     # 可飛性檢查
     flyability = None
-    if query.drone_id:
+    if drone_id:
         from src.risk.drone_specs import check_flyability
 
-        height_col = f"wind_{int(query.height)}m"
+        height_col = f"wind_{int(height)}m"
         wind_speed = result.get(height_col, result.get("wind_50m", 0)) or 0
         try:
-            flyability = check_flyability(wind_speed, query.drone_id)
+            flyability = check_flyability(wind_speed, drone_id)
         except ValueError:
             pass
 
@@ -53,3 +53,24 @@ async def query_risk(query: PointQuery):
         is_corridor=result.get("is_corridor", False),
         flyability=flyability,
     )
+
+
+@router.get("/risk", response_model=RiskResponse)
+async def query_risk_get(
+    lon: float = QueryParam(..., ge=119, le=123, description="經度 (WGS84)"),
+    lat: float = QueryParam(..., ge=21, le=26, description="緯度 (WGS84)"),
+    height: float = QueryParam(50.0, ge=0, le=500, description="飛行高度 (m)"),
+    drone_id: str | None = QueryParam(None, description="無人機型號 ID"),
+):
+    """查詢指定座標的風險等級 (GET)。"""
+    return _do_risk_query(lon, lat, height, drone_id)
+
+
+@router.post("/risk", response_model=RiskResponse)
+async def query_risk(query: PointQuery):
+    """查詢指定座標的風險等級。
+
+    返回風速、風險等級、各高度風速、FAI 等綜合資訊。
+    若提供無人機型號，額外返回可飛性評估。
+    """
+    return _do_risk_query(query.lon, query.lat, query.height, query.drone_id)
