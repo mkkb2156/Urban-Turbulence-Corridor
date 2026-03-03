@@ -22,15 +22,16 @@ import numpy as np
 import pandas as pd
 import requests
 
-from config.settings import PROCESSED_DIR, RAW_DIR, get_city_config
+from config.settings import OPEN_METEO_API_KEY, PROCESSED_DIR, RAW_DIR, get_city_config
 
 logger = logging.getLogger(__name__)
 
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
 
-# Open-Meteo API key（免費 tier 不需要，付費 tier 可設定）
-OPEN_METEO_API_KEY = ""  # 付費用戶填入 API key
+# 付費用戶使用 customer API endpoint
+FORECAST_URL_PAID = "https://customer-api.open-meteo.com/v1/forecast"
+ARCHIVE_URL_PAID = "https://customer-archive-api.open-meteo.com/v1/archive"
 
 
 def fetch_historical_wind(
@@ -56,6 +57,9 @@ def fetch_historical_wind(
     end_date = datetime.now() - timedelta(days=5)  # archive 有數天延遲
     start_date = end_date - timedelta(days=days)
 
+    if api_key is None:
+        api_key = OPEN_METEO_API_KEY
+
     params = {
         "latitude": round(center_lat, 4),
         "longitude": round(center_lon, 4),
@@ -64,8 +68,14 @@ def fetch_historical_wind(
         "hourly": "wind_speed_10m,wind_direction_10m,wind_gusts_10m",
         "timezone": "Asia/Taipei",
     }
+
+    # 付費用戶使用 customer endpoint
     if api_key:
+        url = ARCHIVE_URL_PAID
         params["apikey"] = api_key
+        logger.info("Using Open-Meteo paid API (customer endpoint)")
+    else:
+        url = ARCHIVE_URL
 
     logger.info(
         "Fetching Open-Meteo historical data: %s to %s at (%.4f, %.4f)",
@@ -75,7 +85,7 @@ def fetch_historical_wind(
         center_lon,
     )
 
-    response = requests.get(ARCHIVE_URL, params=params, timeout=30)
+    response = requests.get(url, params=params, timeout=30)
     response.raise_for_status()
     data = response.json()
 
@@ -121,6 +131,9 @@ def fetch_current_wind(
     center_lat = (miny + maxy) / 2
     center_lon = (minx + maxx) / 2
 
+    if api_key is None:
+        api_key = OPEN_METEO_API_KEY
+
     params = {
         "latitude": round(center_lat, 4),
         "longitude": round(center_lon, 4),
@@ -129,12 +142,16 @@ def fetch_current_wind(
         "forecast_days": 1,
         "timezone": "Asia/Taipei",
     }
+
     if api_key:
+        url = FORECAST_URL_PAID
         params["apikey"] = api_key
+    else:
+        url = FORECAST_URL
 
     logger.info("Fetching Open-Meteo current data for %s", city)
 
-    response = requests.get(FORECAST_URL, params=params, timeout=15)
+    response = requests.get(url, params=params, timeout=15)
     response.raise_for_status()
     data = response.json()
 
