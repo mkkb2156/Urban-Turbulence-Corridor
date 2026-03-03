@@ -28,10 +28,24 @@ from config.settings import (
 logger = logging.getLogger("utc.pipeline")
 
 
+def _load_reference_wind_speed(city: str) -> float | None:
+    """嘗試從 Open-Meteo 資料讀取參考風速。"""
+    stats_path = PROCESSED_DIR / "weather" / f"{city}_wind_stats.json"
+    if stats_path.exists():
+        import json
+        with open(stats_path, encoding="utf-8") as f:
+            stats = json.load(f)
+        mean_speed = stats.get("mean_speed")
+        if mean_speed:
+            logger.info("Using Open-Meteo reference wind speed: %.2f m/s", mean_speed)
+            return float(mean_speed)
+    return None
+
+
 def run_phase1_pipeline(
     city: str = "taipei",
     grid_size: int = DEFAULT_GRID_SIZE,
-    reference_wind_speed: float = 6.0,
+    reference_wind_speed: float | None = None,
     skip_ingest: bool = False,
 ) -> Path:
     """執行 Phase 1 完整 pipeline。
@@ -51,16 +65,20 @@ def run_phase1_pipeline(
     Args:
         city: 城市名稱。
         grid_size: 網格大小（公尺）。
-        reference_wind_speed: 參考風速（m/s）。
+        reference_wind_speed: 參考風速（m/s），None 時自動從 Open-Meteo 讀取。
         skip_ingest: 跳過資料下載步驟。
 
     Returns:
         輸出檔案路徑。
     """
+    # 自動取得參考風速
+    if reference_wind_speed is None:
+        reference_wind_speed = _load_reference_wind_speed(city) or 6.0
+
     config = get_city_config(city)
     logger.info("=" * 60)
     logger.info("UTC Phase 1 Pipeline — %s", config.name)
-    logger.info("Grid size: %dm, Reference wind: %.1f m/s", grid_size, reference_wind_speed)
+    logger.info("Grid size: %dm, Reference wind: %.2f m/s", grid_size, reference_wind_speed)
     logger.info("=" * 60)
 
     # Step 1: 建立分析網格
@@ -191,7 +209,7 @@ def main():
     parser = argparse.ArgumentParser(description="UTC Phase 1 Pipeline")
     parser.add_argument("--city", default="taipei", help="City name")
     parser.add_argument("--grid-size", type=int, default=DEFAULT_GRID_SIZE, help="Grid cell size (m)")
-    parser.add_argument("--wind-speed", type=float, default=6.0, help="Reference wind speed (m/s)")
+    parser.add_argument("--wind-speed", type=float, default=None, help="Reference wind speed (m/s). Auto-detected from Open-Meteo data if not set.")
     parser.add_argument("--skip-ingest", action="store_true", help="Skip data ingestion")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
 

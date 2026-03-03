@@ -32,6 +32,29 @@ def _get_engine():
     return get_engine()
 
 
+def _load_open_meteo_wind_rose() -> list[WindRoseSectorResponse] | None:
+    """嘗試載入 Open-Meteo 產生的真實風花圖 JSON。"""
+    import json
+    from pathlib import Path
+    rose_path = Path(__file__).resolve().parent.parent.parent.parent / "data" / "processed" / "weather" / "taipei_wind_rose.json"
+    if not rose_path.exists():
+        return None
+    try:
+        with open(rose_path, encoding="utf-8") as f:
+            data = json.load(f)
+        return [
+            WindRoseSectorResponse(
+                direction=s["direction"],
+                angle=s["angle"],
+                frequency=s["frequency"],
+                mean_speed=s["mean_speed"],
+            )
+            for s in data
+        ]
+    except Exception:
+        return None
+
+
 def _table_exists(conn, table_name: str) -> bool:
     """Check if a table exists in the database."""
     from sqlalchemy import text
@@ -148,11 +171,17 @@ async def get_grid_cells(
 
 @router.get("/wind-rose", response_model=list[WindRoseSectorResponse])
 async def get_wind_rose():
-    """Return wind rose data (16 sectors) derived from grid_cells.
+    """Return wind rose data (16 sectors).
 
-    Uses FAI NE/SW values to estimate directional wind variation.
-    Falls back to realistic Taipei NE-monsoon wind rose if no data.
+    優先讀取 Open-Meteo 歷史風場真實統計，
+    若無則從 grid_cells FAI 估算。
     """
+    # 優先：讀取 Open-Meteo 產生的真實風花圖
+    rose_data = _load_open_meteo_wind_rose()
+    if rose_data:
+        return rose_data
+
+    # Fallback：從 DB 估算
     from sqlalchemy import text
 
     try:
