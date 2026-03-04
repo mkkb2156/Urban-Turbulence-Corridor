@@ -28,6 +28,8 @@ ENV/
 data/raw/
 data/processed/
 data/output/
+*.osm.pbf
+*.pbf
 
 # Jupyter
 .ipynb_checkpoints/
