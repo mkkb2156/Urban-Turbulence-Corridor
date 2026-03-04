@@ -30,7 +30,15 @@ DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "utc")
 DB_USER = os.getenv("DB_USER", "utc")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "utc")
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# 優先使用 DATABASE_URL 環境變數（Vercel / Railway 等 PaaS 常用）
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}",
+)
+
+# === Supabase ===
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
 
 # === Redis ===
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")

@@ -156,10 +156,118 @@ def import_grid_to_db(
     return len(gdf)
 
 
+def import_corridors_to_db(
+    corridor_path: Path | str,
+    city: str = "taipei",
+    engine=None,
+) -> int:
+    """匯入風廊結果至 PostGIS。
+
+    Args:
+        corridor_path: GeoPackage 路徑。
+        city: 城市名稱。
+        engine: SQLAlchemy engine。
+
+    Returns:
+        匯入的記錄數。
+    """
+    if engine is None:
+        engine = get_engine()
+
+    gdf = gpd.read_file(corridor_path)
+    if gdf.crs is None or gdf.crs.to_epsg() != 3826:
+        gdf = gdf.to_crs(CRS_INTERNAL)
+
+    gdf["city"] = city
+    gdf.to_postgis("wind_corridors", engine, if_exists="replace", index=False)
+    logger.info("Imported %d corridors to database", len(gdf))
+    return len(gdf)
+
+
+def update_wind_stats(
+    city: str = "taipei",
+    engine=None,
+) -> None:
+    """從本機 processed 風場資料更新 wind_statistics 表。
+
+    Args:
+        city: 城市名稱。
+        engine: SQLAlchemy engine。
+    """
+    import json
+
+    from config.settings import PROCESSED_DIR
+
+    if engine is None:
+        engine = get_engine()
+
+    stats_path = PROCESSED_DIR / "weather" / f"{city}_wind_stats.json"
+    rose_path = PROCESSED_DIR / "weather" / f"{city}_wind_rose.json"
+
+    if not stats_path.exists():
+        logger.warning("Wind stats not found at %s", stats_path)
+        return
+
+    with open(stats_path, encoding="utf-8") as f:
+        stats = json.load(f)
+
+    wind_rose = None
+    if rose_path.exists():
+        with open(rose_path, encoding="utf-8") as f:
+            wind_rose = json.load(f)
+
+    sql = text("""
+        INSERT INTO wind_statistics (city, period, mean_speed, median_speed, p95_speed,
+                                     dominant_direction, wind_rose, sample_count, updated_at)
+        VALUES (:city, :period, :mean_speed, :median_speed, :p95_speed,
+                :dominant_direction, :wind_rose, :sample_count, now())
+        ON CONFLICT (city, period) DO UPDATE SET
+            mean_speed = EXCLUDED.mean_speed,
+            median_speed = EXCLUDED.median_speed,
+            p95_speed = EXCLUDED.p95_speed,
+            dominant_direction = EXCLUDED.dominant_direction,
+            wind_rose = EXCLUDED.wind_rose,
+            sample_count = EXCLUDED.sample_count,
+            updated_at = now()
+    """)
+
+    with engine.begin() as conn:
+        conn.execute(sql, {
+            "city": city,
+            "period": "annual",
+            "mean_speed": stats.get("mean_speed"),
+            "median_speed": stats.get("median_speed"),
+            "p95_speed": stats.get("p95_speed"),
+            "dominant_direction": None,
+            "wind_rose": json.dumps(wind_rose) if wind_rose else None,
+            "sample_count": stats.get("record_count"),
+        })
+
+    logger.info("Updated wind statistics for %s", city)
+
+
 if __name__ == "__main__":
     import sys
 
     logging.basicConfig(level=logging.INFO)
+
+    city = "taipei"
+    # 嘗試從參數推斷城市名（從檔名）
+    for flag in ("--import-grid", "--import-corridors"):
+        if flag in sys.argv:
+            p = sys.argv[sys.argv.index(flag) + 1]
+            name = Path(p).stem  # e.g. "taipei_pilot_grid" -> "taipei_pilot"
+            parts = name.rsplit("_", 1)
+            if len(parts) == 2:
+                city = parts[0]
+
     if "--import-grid" in sys.argv:
         path = sys.argv[sys.argv.index("--import-grid") + 1]
-        import_grid_to_db(path)
+        import_grid_to_db(path, city=city)
+
+    if "--import-corridors" in sys.argv:
+        path = sys.argv[sys.argv.index("--import-corridors") + 1]
+        import_corridors_to_db(path, city=city)
+
+    if "--update-wind-stats" in sys.argv:
+        update_wind_stats(city=city)

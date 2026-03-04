@@ -1,0 +1,40 @@
+name: Update Wind Data
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # 每 6 小時
+  workflow_dispatch:             # 手動觸發
+
+jobs:
+  update-wind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv pip install --system -e ".[pipeline]"
+
+      - name: Fetch Open-Meteo wind data (7 days)
+        run: python -m src.ingest.open_meteo --city taipei --days 7
+
+      - name: Fetch CWA current observations
+        if: ${{ secrets.CWA_API_KEY != '' }}
+        run: python -m src.ingest.cwa_weather --region taipei
+        env:
+          CWA_API_KEY: ${{ secrets.CWA_API_KEY }}
+
+      - name: Import wind data to Supabase
+        if: ${{ secrets.DB_HOST != '' }}
+        run: python -m src.db.queries --update-wind-stats
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
