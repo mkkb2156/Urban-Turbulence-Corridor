@@ -46,6 +46,8 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 # === API ===
 CWA_API_KEY = os.getenv("CWA_API_KEY", "")
 OPEN_METEO_API_KEY = os.getenv("OPEN_METEO_API_KEY", "")
+CDS_API_KEY = os.getenv("CDS_API_KEY", "")
+CDS_API_URL = os.getenv("CDS_API_URL", "https://cds.climate.copernicus.eu/api")
 
 # === 應用程式 ===
 APP_ENV = os.getenv("APP_ENV", "development")

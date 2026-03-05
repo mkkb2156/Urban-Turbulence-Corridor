@@ -61,7 +61,7 @@ def download_osm_buildings(
 
     # 下載建築物 footprint
     tags = {"building": True}
-    gdf = ox.features_from_bbox(bbox=(maxy, miny, maxx, minx), tags=tags)
+    gdf = ox.features_from_bbox(bbox=(minx, miny, maxx, maxy), tags=tags)
 
     # 只保留 Polygon/MultiPolygon
     gdf = gdf[gdf.geometry.type.isin(["Polygon", "MultiPolygon"])].copy()

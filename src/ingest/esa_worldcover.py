@@ -77,7 +77,7 @@ def _tile_name(lon: int, lat: int) -> str:
     """Generate ESA WorldCover tile filename for given 3°×3° block."""
     ns = "N" if lat >= 0 else "S"
     ew = "E" if lon >= 0 else "W"
-    return f"ESA_WorldCover_10m_2021_v200_{ew}{abs(lon):03d}{ns}{abs(lat):02d}_Map.tif"
+    return f"ESA_WorldCover_10m_2021_v200_{ns}{abs(lat):02d}{ew}{abs(lon):03d}_Map.tif"
 
 
 def download_worldcover(

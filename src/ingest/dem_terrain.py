@@ -210,17 +210,17 @@ def download_copernicus_dem(
             lat_str = f"{abs(lat):02d}"
             lon_str = f"{abs(lon):03d}"
 
-            tile_name = f"Copernicus_DSM_COG_10_{ns}{lat_str}_00_{ew}{lon_str}_00_DEM.tif"
-            s3_url = f"https://copernicus-dem-30m.s3.eu-central-1.amazonaws.com/{tile_name}"
+            tile_name = f"Copernicus_DSM_COG_10_{ns}{lat_str}_00_{ew}{lon_str}_00_DEM"
+            s3_url = f"https://copernicus-dem-30m.s3.amazonaws.com/{tile_name}/{tile_name}.tif"
 
-            local_path = output_dir / tile_name
+            local_path = output_dir / f"{tile_name}.tif"
 
             if local_path.exists():
                 logger.info("Tile already downloaded: %s", local_path.name)
                 tile_paths.append(local_path)
                 continue
 
-            logger.info("Downloading Copernicus DEM tile: %s", tile_name)
+            logger.info("Downloading Copernicus DEM tile: %s.tif", tile_name)
             try:
                 import requests
                 response = requests.get(s3_url, timeout=120, stream=True)
