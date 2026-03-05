@@ -79,9 +79,7 @@ async def get_dashboard_stats():
         engine = _get_engine()
         with engine.connect() as conn:
             if not _table_exists(conn, "grid_cells"):
-                return DashboardStats(
-                    last_updated=datetime.now(timezone.utc).isoformat(),
-                )
+                raise RuntimeError("grid_cells table not found")
 
             row = conn.execute(text("""
                 SELECT
@@ -97,7 +95,9 @@ async def get_dashboard_stats():
 
             m = row._mapping
             total_grids = int(m["total_grids"])
-            # Each cell is 100m x 100m = 0.01 km^2
+            if total_grids == 0:
+                raise RuntimeError("grid_cells table is empty")
+
             monitoring_area_km2 = round(total_grids * 0.01, 2)
             last_updated = datetime.now(timezone.utc).isoformat()
 
@@ -115,10 +115,11 @@ async def get_dashboard_stats():
                 last_updated=last_updated,
             )
     except Exception as exc:
-        logger.warning("Failed to query dashboard stats: %s", exc)
-        return DashboardStats(
-            last_updated=datetime.now(timezone.utc).isoformat(),
-        )
+        logger.warning("Stats DB unavailable, using fallback: %s", exc)
+        from src.api.fallback import generate_demo_stats
+
+        stats = generate_demo_stats()
+        return DashboardStats(**stats)
 
 
 @router.get("/grids", response_model=list[GridCellResponse])
@@ -137,7 +138,7 @@ async def get_grid_cells(
         engine = _get_engine()
         with engine.connect() as conn:
             if not _table_exists(conn, "grid_cells"):
-                return []
+                raise RuntimeError("grid_cells table not found")
 
             rows = conn.execute(text(f"""
                 SELECT
@@ -150,6 +151,9 @@ async def get_grid_cells(
                     COALESCE(is_corridor, false) AS is_corridor
                 FROM grid_cells
             """)).fetchall()
+
+            if not rows:
+                raise RuntimeError("grid_cells table is empty")
 
             return [
                 GridCellResponse(
@@ -165,8 +169,11 @@ async def get_grid_cells(
                 for r in rows
             ]
     except Exception as exc:
-        logger.warning("Failed to query grid cells: %s", exc)
-        return []
+        logger.warning("Grids DB unavailable, using fallback: %s", exc)
+        from src.api.fallback import generate_demo_grids
+
+        grids = generate_demo_grids(height)
+        return [GridCellResponse(**g) for g in grids]
 
 
 @router.get("/wind-rose", response_model=list[WindRoseSectorResponse])
@@ -283,7 +290,7 @@ async def get_fai_data(
         engine = _get_engine()
         with engine.connect() as conn:
             if not _table_exists(conn, "grid_cells"):
-                return []
+                raise RuntimeError("grid_cells table not found")
 
             rows = conn.execute(text("""
                 SELECT
@@ -295,6 +302,9 @@ async def get_fai_data(
                     COALESCE(bcr, 0)     AS building_density
                 FROM grid_cells
             """)).fetchall()
+
+            if not rows:
+                raise RuntimeError("grid_cells table is empty")
 
             return [
                 FAIDataResponse(
@@ -308,5 +318,8 @@ async def get_fai_data(
                 for r in rows
             ]
     except Exception as exc:
-        logger.warning("Failed to query FAI data: %s", exc)
-        return []
+        logger.warning("FAI DB unavailable, using fallback: %s", exc)
+        from src.api.fallback import generate_demo_fai
+
+        fai_data = generate_demo_fai(height)
+        return [FAIDataResponse(**f) for f in fai_data]
