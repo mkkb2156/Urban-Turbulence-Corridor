@@ -193,7 +193,23 @@ Urban Turbulence Corridor 是一套都市風場湍流建模與無人機飛行風
 - FastAPI 後端 + React 前端
 - Vercel 部署配置
 
-### Phase 2 🔄 進行中 — 互動式 Demo
+### Phase 2 ✅ 已完成 — 互動式 Demo（Mock Data）
+
+Sprint 0-5 全部實作完成（使用 mock data），包含響應式移動端設計。
+
+### Phase 2.5 ✅ 已完成 — 真實數據導入模組
+
+| Batch | 類別 | 模組 | 狀態 |
+|-------|------|------|------|
+| 1 | 風場 | `open_meteo.py` → `fetch_forecast_wind()` 多高度層預報 | ✅ |
+| 1 | 風場 | `forecast.py` → Open-Meteo 真實數據 + mock fallback | ✅ |
+| 1 | 風場 | `forecast.py` → CWA 即時測站 `/forecast/stations` | ✅ |
+| 2 | 地形 | `dem_terrain.py` → Copernicus DEM S3 下載 + 多 tile 合併 | ✅ |
+| 3 | 建築 | `ghs_built_h.py` → GHS-BUILT-H 下載/處理/OSM 高度填補 | ✅ |
+| 4 | 覆蓋 | `esa_worldcover.py` → 10m 土地覆蓋 + z₀ 粗糙度轉換 | ✅ |
+| 4 | 空域 | `caa_airspace.py` → 台北禁/限飛區 + 合規性檢查 | ✅ |
+
+### Phase 2 原始 Sprint 計畫（已完成）
 
 #### Sprint 0：基礎設施 — 預報數據 + 地圖繪圖工具
 > 所有互動功能的前提
@@ -277,9 +293,11 @@ Urban Turbulence Corridor 是一套都市風場湍流建模與無人機飛行風
 ### Phase 3 📋 計畫中 — 生產化
 - [ ] 使用者帳戶與歷史紀錄
 - [ ] 即時氣象推播（風速驟變警報）
-- [ ] 禁飛區圖層疊加
+- [x] 禁飛區圖層（`caa_airspace.py` 已建立，待前端整合）
 - [ ] 飛控系統 API 整合
-- [ ] 行動裝置適配
+- [x] 行動裝置適配（已完成響應式設計）
+- [ ] 資料排程自動更新（cron / Celery）
+- [ ] PostGIS 實際入庫（目前為檔案級）
 
 ---
 
