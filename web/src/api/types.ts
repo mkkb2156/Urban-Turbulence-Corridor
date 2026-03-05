@@ -151,6 +151,123 @@ export interface TestResults {
   last_run: string;
 }
 
+// ─── Forecast ─────────────────────────────────────────────────
+export interface ForecastPoint {
+  time: string;
+  wind_speed: number;
+  wind_direction: number;
+  wind_gusts: number;
+  risk_level: RiskLevel;
+}
+
+export interface ForecastResponse {
+  city: string;
+  hours: number;
+  generated_at: string;
+  forecasts: ForecastPoint[];
+}
+
+// ─── Area Prediction ──────────────────────────────────────────
+export interface AreaPredictRequest {
+  polygon: [number, number][];
+  height?: number;
+  drone_id?: string;
+  start_time?: string;
+  end_time?: string;
+}
+
+export interface AreaPredictResponse {
+  center: { lon: number; lat: number };
+  area_km2: number;
+  grid_count: number;
+  height: number;
+  wind_stats: {
+    mean_speed: number;
+    max_speed: number;
+    min_speed: number;
+    std_speed: number;
+  };
+  risk_distribution: Record<RiskLevel, number>;
+  wind_rose: WindRoseSector[];
+  flyability: {
+    drone_id: string;
+    max_wind_in_area: number;
+    tolerance: number;
+    safe_percentage: number;
+    flyable: boolean;
+  } | null;
+  grid_cells: {
+    lon: number;
+    lat: number;
+    wind_speed: number;
+    wind_direction: number;
+    risk_level: RiskLevel;
+  }[];
+  generated_at: string;
+}
+
+// ─── Route Analysis ───────────────────────────────────────────
+export interface RouteSegment {
+  from: [number, number];
+  to: [number, number];
+  distance_m: number;
+  bearing: number;
+  avg_wind_speed: number;
+  avg_wind_direction: number;
+  headwind: number;
+  risk_level: RiskLevel;
+  travel_time_s: number;
+  sample_points: {
+    lon: number;
+    lat: number;
+    wind_speed: number;
+    wind_direction: number;
+    risk_level: RiskLevel;
+  }[];
+}
+
+export interface RouteAnalyzeResponse {
+  waypoints: [number, number][];
+  height: number;
+  total_distance_m: number;
+  total_time_s: number;
+  max_risk: RiskLevel;
+  avg_wind_speed: number;
+  segments: RouteSegment[];
+  flyability: {
+    drone_id: string;
+    max_wind_on_route: number;
+    tolerance: number;
+    flyable: boolean;
+    danger_segments: number;
+  } | null;
+  generated_at: string;
+}
+
+// ─── Route Planning ───────────────────────────────────────────
+export type RouteMode = 'safest' | 'shortest' | 'balanced';
+
+export interface PlannedRoute {
+  mode: RouteMode;
+  waypoints: [number, number][];
+  geometry: GeoJSON.LineString;
+  total_distance_m: number;
+  total_time_s: number;
+  max_risk: RiskLevel;
+  avg_risk_score: number;
+  segments: RouteSegment[];
+  flyable?: boolean;
+}
+
+export interface RoutePlanResponse {
+  start: [number, number];
+  end: [number, number];
+  height: number;
+  routes: PlannedRoute[];
+  recommended: RouteMode;
+  generated_at: string;
+}
+
 // ─── Height Options ────────────────────────────────────────────
 export type HeightOption = 50 | 80 | 120;
 

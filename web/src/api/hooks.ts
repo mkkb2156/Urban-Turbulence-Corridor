@@ -11,6 +11,11 @@ import type {
   WindRoseSector,
   TestResults,
   HeightOption,
+  ForecastResponse,
+  AreaPredictRequest,
+  AreaPredictResponse,
+  RouteAnalyzeResponse,
+  RoutePlanResponse,
 } from './types';
 
 // ─── Query Keys ────────────────────────────────────────────────
@@ -23,6 +28,7 @@ export const queryKeys = {
   fai: (height: HeightOption) => ['fai', height] as const,
   windRose: () => ['wind-rose'] as const,
   testResults: () => ['test-results'] as const,
+  forecast: (city: string, hours: number) => ['forecast', city, hours] as const,
 };
 
 // ─── Wind Query ────────────────────────────────────────────────
@@ -130,5 +136,38 @@ export function useFlyabilityCheck() {
         height: query.height,
         drone_id: query.drone_id,
       }),
+  });
+}
+
+// ─── Forecast ─────────────────────────────────────────────────
+export function useForecast(city = 'taipei', hours = 72) {
+  return useQuery({
+    queryKey: queryKeys.forecast(city, hours),
+    queryFn: () => apiClient.get<ForecastResponse>('/forecast', { city, hours }),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ─── Area Prediction ──────────────────────────────────────────
+export function useAreaPrediction() {
+  return useMutation({
+    mutationFn: (req: AreaPredictRequest) =>
+      apiClient.post<AreaPredictResponse>('/area/predict', req),
+  });
+}
+
+// ─── Route Analysis ───────────────────────────────────────────
+export function useRouteAnalysis() {
+  return useMutation({
+    mutationFn: (req: { waypoints: [number, number][]; height?: number; drone_id?: string }) =>
+      apiClient.post<RouteAnalyzeResponse>('/route/analyze', req),
+  });
+}
+
+// ─── Route Planning ───────────────────────────────────────────
+export function useRoutePlan() {
+  return useMutation({
+    mutationFn: (req: { start: [number, number]; end: [number, number]; height?: number; drone_id?: string; mode?: string }) =>
+      apiClient.post<RoutePlanResponse>('/route/plan', req),
   });
 }

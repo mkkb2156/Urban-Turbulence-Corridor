@@ -7,6 +7,7 @@ import {
   BarChart3,
   Plane,
   FlaskConical,
+  Navigation,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -28,6 +29,7 @@ interface NavItem {
 export default function Sidebar({ collapsed, onToggle, testStatus }: SidebarProps) {
   const navItems: NavItem[] = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/analysis', icon: Navigation, label: 'Flight Analysis' },
     { to: '/corridors', icon: Wind, label: 'Wind Corridors' },
     { to: '/risk', icon: AlertTriangle, label: 'Risk Assessment' },
     { to: '/fai', icon: BarChart3, label: 'FAI Analysis' },
