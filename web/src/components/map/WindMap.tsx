@@ -6,6 +6,7 @@ import { DEFAULT_CENTER, DEFAULT_ZOOM, gridCellPolygon } from '../../utils/geo';
 import MapControls from './MapControls';
 import RiskLegend from './RiskLegend';
 import GridPopup from './GridPopup';
+import WindArrowLayer from './WindArrowLayer';
 
 interface WindMapProps {
   gridCells?: GridCell[];
@@ -286,6 +287,13 @@ export default function WindMap({
           onLayersChange={onLayersChange}
         />
       </div>
+
+      {/* Wind arrow layer */}
+      <WindArrowLayer
+        map={mapRef.current}
+        gridCells={gridCells}
+        visible={layers.wind_arrows}
+      />
 
       {/* Risk legend */}
       <div className="absolute bottom-8 left-3 z-10">
