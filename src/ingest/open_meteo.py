@@ -284,6 +284,100 @@ def save_wind_data(
     return output_dir
 
 
+def fetch_forecast_wind(
+    city: str = "taipei",
+    hours: int = 72,
+    api_key: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+) -> pd.DataFrame:
+    """取得即時風場預報（未來 N 小時逐時）。
+
+    Args:
+        city: 城市名稱（用於取得預設中心座標）。
+        hours: 預報時數（最多 168h / 7 天）。
+        api_key: Open-Meteo API key（付費用戶）。
+        lat: 指定緯度（覆蓋 city 預設值）。
+        lon: 指定經度（覆蓋 city 預設值）。
+
+    Returns:
+        包含 time, wind_speed, wind_direction, wind_gusts 的 DataFrame。
+    """
+    if lat is None or lon is None:
+        config = get_city_config(city)
+        minx, miny, maxx, maxy = config.bounds_4326
+        lat = (miny + maxy) / 2
+        lon = (minx + maxx) / 2
+
+    if api_key is None:
+        api_key = OPEN_METEO_API_KEY
+
+    forecast_days = min(7, max(1, (hours + 23) // 24))
+
+    params = {
+        "latitude": round(lat, 4),
+        "longitude": round(lon, 4),
+        "hourly": ",".join([
+            "wind_speed_10m",
+            "wind_direction_10m",
+            "wind_gusts_10m",
+            "wind_speed_80m",
+            "wind_direction_80m",
+            "wind_speed_120m",
+            "wind_direction_120m",
+        ]),
+        "forecast_days": forecast_days,
+        "timezone": "Asia/Taipei",
+    }
+
+    if api_key:
+        url = FORECAST_URL_PAID
+        params["apikey"] = api_key
+        logger.info("Using Open-Meteo paid forecast API")
+    else:
+        url = FORECAST_URL
+
+    logger.info(
+        "Fetching Open-Meteo forecast: %d hours at (%.4f, %.4f)",
+        hours, lat, lon,
+    )
+
+    response = requests.get(url, params=params, timeout=30)
+    response.raise_for_status()
+    data = response.json()
+
+    hourly = data.get("hourly", {})
+    df = pd.DataFrame({
+        "time": pd.to_datetime(hourly["time"]),
+        "wind_speed_10m": hourly.get("wind_speed_10m"),
+        "wind_direction_10m": hourly.get("wind_direction_10m"),
+        "wind_gusts_10m": hourly.get("wind_gusts_10m"),
+        "wind_speed_80m": hourly.get("wind_speed_80m"),
+        "wind_direction_80m": hourly.get("wind_direction_80m"),
+        "wind_speed_120m": hourly.get("wind_speed_120m"),
+        "wind_direction_120m": hourly.get("wind_direction_120m"),
+    })
+
+    # 截取所需時數
+    df = df.head(hours)
+
+    # 向後相容欄位
+    df["wind_speed"] = df["wind_speed_10m"]
+    df["wind_direction"] = df["wind_direction_10m"]
+    df["wind_gusts"] = df["wind_gusts_10m"]
+
+    df = df.dropna(subset=["wind_speed", "wind_direction"])
+
+    logger.info(
+        "Forecast wind: %d records, speed range %.1f–%.1f m/s",
+        len(df),
+        df["wind_speed"].min() if len(df) > 0 else 0,
+        df["wind_speed"].max() if len(df) > 0 else 0,
+    )
+
+    return df
+
+
 if __name__ == "__main__":
     import sys
 

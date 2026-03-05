@@ -163,8 +163,30 @@ export interface ForecastPoint {
 export interface ForecastResponse {
   city: string;
   hours: number;
+  source: 'open-meteo' | 'mock';
   generated_at: string;
   forecasts: ForecastPoint[];
+}
+
+// ─── CWA Station ─────────────────────────────────────────────
+export interface CWAStation {
+  station_id: string;
+  station_name: string;
+  lat: number;
+  lon: number;
+  wind_speed: number;
+  wind_direction: number | null;
+  gust_speed: number | null;
+  observation_time: string | null;
+  risk_level: RiskLevel;
+}
+
+export interface CWAStationsResponse {
+  region: string;
+  source: string;
+  station_count: number;
+  stations: CWAStation[];
+  fetched_at: string;
 }
 
 // ─── Area Prediction ──────────────────────────────────────────

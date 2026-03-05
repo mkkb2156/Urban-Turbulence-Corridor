@@ -12,6 +12,7 @@ import type {
   TestResults,
   HeightOption,
   ForecastResponse,
+  CWAStationsResponse,
   AreaPredictRequest,
   AreaPredictResponse,
   RouteAnalyzeResponse,
@@ -29,6 +30,7 @@ export const queryKeys = {
   windRose: () => ['wind-rose'] as const,
   testResults: () => ['test-results'] as const,
   forecast: (city: string, hours: number) => ['forecast', city, hours] as const,
+  cwaStations: (region: string) => ['cwa-stations', region] as const,
 };
 
 // ─── Wind Query ────────────────────────────────────────────────
@@ -145,6 +147,16 @@ export function useForecast(city = 'taipei', hours = 72) {
     queryKey: queryKeys.forecast(city, hours),
     queryFn: () => apiClient.get<ForecastResponse>('/forecast', { city, hours }),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ─── CWA Stations ─────────────────────────────────────────────
+export function useCWAStations(region = 'taipei') {
+  return useQuery({
+    queryKey: queryKeys.cwaStations(region),
+    queryFn: () => apiClient.get<CWAStationsResponse>('/forecast/stations', { region }),
+    staleTime: 5 * 60 * 1000, // 5 min — CWA updates every 10 min
+    retry: 1,
   });
 }
 
