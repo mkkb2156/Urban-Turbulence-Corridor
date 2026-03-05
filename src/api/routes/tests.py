@@ -183,7 +183,7 @@ def _normalize_vitest_report(data: dict) -> TestReport:
     summary["duration_ms"] = data.get("startTime", 0)
 
     return TestReport(
-        timestamp=data.get("startTime", ""),
+        timestamp=str(data.get("startTime", "")),
         framework="vitest",
         suites=suites,
         summary=summary,
