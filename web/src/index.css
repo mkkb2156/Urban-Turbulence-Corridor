@@ -39,6 +39,20 @@
   }
 }
 
+/* Mobile touch targets — ensure min 44px tap area */
+@layer utilities {
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 /* MapLibre overrides */
 .maplibregl-map {
   font-family: inherit;

@@ -45,7 +45,7 @@ export default function DroneSelector({ selected, onSelect, compact }: DroneSele
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-md bg-white shadow-lg dark:bg-gray-800">
+        <div className="absolute left-0 top-full z-50 mt-1 w-full min-w-[256px] rounded-md bg-white shadow-lg dark:bg-gray-800 max-md:right-0">
           <div className="p-1">
             <button
               onClick={() => { onSelect(null); setOpen(false); }}
@@ -61,7 +61,7 @@ export default function DroneSelector({ selected, onSelect, compact }: DroneSele
                 key={drone.id}
                 onClick={() => { onSelect(drone); setOpen(false); }}
                 className={clsx(
-                  'flex w-full items-center justify-between rounded px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700',
+                  'flex w-full items-center justify-between rounded px-3 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 md:py-2',
                   selected?.id === drone.id && 'bg-blue-50 dark:bg-blue-900/30',
                 )}
               >

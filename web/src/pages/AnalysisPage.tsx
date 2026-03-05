@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import clsx from 'clsx';
-import { Route, Pentagon, Navigation, Loader2 } from 'lucide-react';
+import { Route, Pentagon, Navigation, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
 import { DEFAULT_CENTER, DEFAULT_ZOOM } from '../utils/geo';
 import { RISK_COLORS } from '../utils/colors';
 import { formatWindSpeed } from '../utils/format';
@@ -31,6 +31,7 @@ export default function AnalysisPage() {
   const [drawnPoints, setDrawnPoints] = useState<[number, number][]>([]);
   const [markers, setMarkers] = useState<maplibregl.Marker[]>([]);
   const [timelineIndex, setTimelineIndex] = useState(0);
+  const [mobilePanel, setMobilePanel] = useState(false);
 
   // API hooks
   const { data: forecastData } = useForecast('taipei', 72);
@@ -328,9 +329,29 @@ export default function AnalysisPage() {
   const activeTab = tabs.find((t) => t.id === tab)!;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] gap-4">
-      {/* Left sidebar */}
-      <div className="flex w-80 flex-shrink-0 flex-col gap-3 overflow-y-auto">
+    <div className="relative flex h-[calc(100vh-5rem)] flex-col gap-4 md:h-[calc(100vh-8rem)] md:flex-row">
+      {/* Mobile toggle button */}
+      <button
+        onClick={() => setMobilePanel(!mobilePanel)}
+        className="fixed bottom-20 right-3 z-30 flex items-center gap-1 rounded-full bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-lg md:hidden"
+      >
+        {mobilePanel ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+        {mobilePanel ? 'Map' : 'Panel'}
+      </button>
+
+      {/* Left sidebar / Mobile bottom sheet */}
+      <div className={clsx(
+        // Mobile: bottom sheet overlay
+        'max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-20 max-md:max-h-[70vh] max-md:overflow-y-auto max-md:rounded-t-2xl max-md:bg-white max-md:shadow-2xl max-md:transition-transform max-md:duration-300 max-md:dark:bg-gray-900',
+        !mobilePanel && 'max-md:translate-y-full',
+        // Desktop: fixed sidebar
+        'md:flex md:w-80 md:flex-shrink-0 md:flex-col md:gap-3 md:overflow-y-auto',
+      )}>
+        {/* Mobile drag handle */}
+        <div className="flex justify-center py-2 md:hidden">
+          <div className="h-1 w-8 rounded-full bg-gray-300 dark:bg-gray-600" />
+        </div>
+        <div className="flex flex-col gap-3 p-3 md:p-0">
         {/* Tab selector */}
         <div className="flex gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
           {tabs.map((t) => (
@@ -522,10 +543,11 @@ export default function AnalysisPage() {
             ))}
           </div>
         )}
+        </div>
       </div>
 
       {/* Map */}
-      <div className="relative flex-1 overflow-hidden rounded-lg shadow-lg">
+      <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg shadow-lg max-md:order-first">
         <div ref={containerRef} className="h-full w-full" />
 
         {/* Drawing toolbar */}
@@ -541,7 +563,7 @@ export default function AnalysisPage() {
 
         {/* Timeline player */}
         {forecastData && (
-          <div className="absolute bottom-4 left-4 right-4 z-10">
+          <div className="absolute bottom-2 left-2 right-2 z-10 md:bottom-4 md:left-4 md:right-4">
             <TimelinePlayer
               forecasts={forecastData.forecasts}
               currentIndex={timelineIndex}
