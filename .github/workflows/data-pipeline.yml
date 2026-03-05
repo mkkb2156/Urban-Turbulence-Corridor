@@ -1,0 +1,107 @@
+name: Monthly Data Pipeline
+
+on:
+  schedule:
+    - cron: '0 3 1 * *'  # 每月 1 日 03:00 UTC
+  workflow_dispatch:       # 手動觸發
+    inputs:
+      include_era5:
+        description: '是否下載 ERA5 再分析數據'
+        type: boolean
+        default: false
+      city:
+        description: '城市'
+        type: string
+        default: 'taipei'
+
+jobs:
+  monthly-update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install pipeline dependencies
+        run: uv pip install --system -e ".[pipeline]"
+
+      - name: Cache downloaded data
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/raw/terrain/copernicus
+            data/raw/landcover/worldcover
+            data/raw/buildings/ghs_built_h
+          key: data-cache-${{ inputs.city || 'taipei' }}-v1
+
+      # ── Copernicus DEM ──
+      - name: Download Copernicus DEM
+        run: |
+          python -c "
+          from src.ingest.dem_terrain import download_and_process_copernicus
+          download_and_process_copernicus('${{ inputs.city || 'taipei' }}')
+          "
+
+      # ── ESA WorldCover ──
+      - name: Download ESA WorldCover
+        run: |
+          python -c "
+          from src.ingest.esa_worldcover import download_worldcover, process_worldcover, worldcover_to_roughness
+          tiles = download_worldcover('${{ inputs.city || 'taipei' }}')
+          if tiles:
+              wc = process_worldcover(tiles[0], city='${{ inputs.city || 'taipei' }}')
+              worldcover_to_roughness(wc)
+          "
+
+      # ── GHS-BUILT-H ──
+      - name: Download GHS-BUILT-H building heights
+        run: |
+          python -c "
+          from src.ingest.ghs_built_h import download_ghs_built_h, process_ghs_built_h
+          raw = download_ghs_built_h()
+          process_ghs_built_h(raw, city='${{ inputs.city || 'taipei' }}')
+          "
+
+      # ── Airspace ──
+      - name: Generate airspace zones
+        run: |
+          python -c "
+          from src.ingest.caa_airspace import create_taipei_airspace_mock, save_airspace
+          gdf = create_taipei_airspace_mock()
+          save_airspace(gdf, city='${{ inputs.city || 'taipei' }}')
+          "
+
+      # ── ERA5 (optional) ──
+      - name: Download ERA5 reanalysis
+        if: ${{ inputs.include_era5 == true && secrets.CDS_API_KEY != '' }}
+        run: |
+          python -m src.ingest.era5 --city ${{ inputs.city || 'taipei' }} --start-year 2020
+        env:
+          CDS_API_URL: https://cds.climate.copernicus.eu/api
+          CDS_API_KEY: ${{ secrets.CDS_API_KEY }}
+
+      # ── Import to Supabase ──
+      - name: Import processed data to PostGIS
+        if: ${{ secrets.DB_HOST != '' }}
+        run: |
+          echo "TODO: Import processed data to Supabase PostGIS"
+          echo "Processed files:"
+          find data/processed -type f -name "*.gpkg" -o -name "*.tif" -o -name "*.json" 2>/dev/null | head -20
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
+      # ── Upload artifacts ──
+      - name: Upload processed data
+        uses: actions/upload-artifact@v4
+        with:
+          name: processed-data-${{ inputs.city || 'taipei' }}
+          path: data/processed/
+          retention-days: 30
