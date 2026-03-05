@@ -1,17 +1,30 @@
+# ============================================================
 # 資料來源 URL、API key 路徑、更新頻率
+# 優先度: critical / high / medium / low
+# ============================================================
 
-nlsc_buildings:
-  description: "國土測繪中心 3D 建物資料"
-  url: "https://maps.nlsc.gov.tw/S09SOA/homePage.action?Language=ZH"
-  format: "WFS/SHP/GML"
-  auth: "NLSC 圖資商店帳號（免費）"
+# ──────────────────────────────────────
+# 風場數據
+# ──────────────────────────────────────
+
+open_meteo:
+  description: "Open-Meteo 即時 + 72h 預報風場"
+  forecast_url: "https://api.open-meteo.com/v1/forecast"
+  archive_url: "https://archive-api.open-meteo.com/v1/archive"
+  paid_forecast_url: "https://customer-api.open-meteo.com/v1/forecast"
+  paid_archive_url: "https://customer-archive-api.open-meteo.com/v1/archive"
+  auth: "API key（環境變數 OPEN_METEO_API_KEY，免費版可不填）"
+  resolution: "9–25 km，4 高度層"
   fields:
-    geometry: "Polygon（建物輪廓）"
-    height: "BHEIGHT 或 HEIGHT（公尺）"
-  notes: "高度單位為公尺，精度 0.01m；部分舊建物高度缺失"
+    wind_speed: "wind_speed_10m（m/s）"
+    wind_direction: "wind_direction_10m（°）"
+    wind_gusts: "wind_gusts_10m（m/s）"
+  update_frequency: "逐時"
+  priority: critical
+  notes: "免費版有頻率限制；forecast_days=3 取未來 72h"
 
 cwa_weather:
-  description: "中央氣象署風場 API"
+  description: "中央氣象署測站觀測"
   base_url: "https://opendata.cwa.gov.tw/api/v1/rest/datastore/"
   auth: "API key（環境變數 CWA_API_KEY）"
   datasets:
@@ -21,25 +34,181 @@ cwa_weather:
     wind_speed: "WDSD（平均風速 m/s）"
     wind_direction: "WDSE（風向角度°）"
     gust: "GUST（陣風 m/s）"
+  resolution: "點位，10 分鐘"
   update_frequency: "10 分鐘"
+  priority: critical
+  notes: "地面真值校驗來源"
+
+cwa_wrf:
+  description: "中央氣象署 WRF 數值預報"
+  base_url: "https://opendata.cwa.gov.tw/api/v1/rest/datastore/"
+  auth: "API key（環境變數 CWA_API_KEY）"
+  resolution: "3 km"
+  priority: critical
+  notes: "高解析度台灣本地數值預報模式"
+
+igra_sounding:
+  description: "IGRA 探空觀測（板橋 46692）"
+  url: "https://www.ncei.noaa.gov/products/weather-balloon/integrated-global-radiosonde-archive"
+  format: "固定欄位文字檔"
+  resolution: "點位，2 次/日（00Z, 12Z）"
+  priority: high
+  notes: "垂直風速剖面驗證，對數風速模型校正；板橋站 ID: TWM00046692"
+
+era5:
+  description: "ECMWF ERA5 再分析"
+  url: "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels"
+  format: "NetCDF / GRIB"
+  resolution: "31 km (0.25°)，逐時"
+  auth: "CDS API key（免費註冊）"
+  priority: high
+  notes: "長期氣候學統計，風玫瑰歷史基線；1940–至今"
+
+global_wind_atlas:
+  description: "Global Wind Atlas 風能資源圖"
+  url: "https://globalwindatlas.info"
+  format: "GeoTIFF / WMS"
+  resolution: "250 m"
+  priority: medium
+  notes: "年均風速空間分佈，粗估風場背景值"
+
+moenv_air_quality:
+  description: "環境部空品測站風速"
+  url: "https://data.moenv.gov.tw"
+  format: "JSON API"
+  resolution: "點位，逐時"
+  priority: medium
+  notes: "補充地面風速觀測，填補 CWA 測站空隙；約 80 站"
+
+civil_iot:
+  description: "民生公共物聯網微氣象站"
+  url: "https://ci.taiwan.gov.tw"
+  format: "JSON API"
+  resolution: "點位，更新頻率不等"
+  priority: low
+  notes: "密度高但品質不均，需 QC 過濾"
+
+# ──────────────────────────────────────
+# 地形數據
+# ──────────────────────────────────────
 
 terrain_dtm:
-  description: "20m DTM"
+  description: "台灣 20m DTM"
   url: "https://data.gov.tw/dataset/35430"
   format: "GeoTIFF"
+  resolution: "20 m"
+  priority: high
 
 terrain_dsm:
-  description: "20m DSM"
+  description: "台灣 20m DSM"
   url: "https://data.gov.tw/dataset/175240"
   format: "GeoTIFF"
+  resolution: "20 m"
+  priority: high
 
 terrain_copernicus:
-  description: "Copernicus GLO-30 DEM（備用）"
+  description: "Copernicus GLO-30 DEM"
   url: "s3://copernicus-dem-30m/"
   format: "GeoTIFF"
+  resolution: "30 m"
+  auth: "無需認證（AWS S3 公開）"
+  priority: critical
+  notes: "全球 DSM 備援，快速取得無需申請"
+
+terrain_fabdem:
+  description: "FABDEM（去除建築/樹冠的 DTM）"
+  url: "https://data.bris.ac.uk/data/dataset/s5hqmjcdj8yo2ibzi9b4ew3sn"
+  format: "GeoTIFF"
+  resolution: "30 m"
+  auth: "學術註冊下載"
+  priority: high
+  notes: "裸地形，z₀/zd 計算更準確"
+
+# ──────────────────────────────────────
+# 建築數據
+# ──────────────────────────────────────
 
 osm:
   description: "OpenStreetMap 台灣"
   url: "https://download.geofabrik.de/asia/taiwan.html"
   format: "PBF"
-  notes: "用 osmnx 或 pyrosm 提取道路網路"
+  resolution: "個體建築"
+  priority: critical
+  notes: "建築足跡 + 部分高度；用 osmnx 或 pyrosm 提取"
+
+nlsc_buildings:
+  description: "國土測繪中心 3D 建物資料"
+  url: "https://maps.nlsc.gov.tw/S09SOA/homePage.action?Language=ZH"
+  format: "WFS/SHP/GML"
+  auth: "NLSC 圖資商店帳號（免費）"
+  resolution: "個體建築"
+  fields:
+    geometry: "Polygon（建物輪廓）"
+    height: "BHEIGHT 或 HEIGHT（公尺）"
+  priority: critical
+  notes: "高度單位為公尺，精度 0.01m；部分舊建物高度缺失"
+
+ghs_built_h:
+  description: "GHS-BUILT-H 全球建築高度"
+  url: "https://ghsl.jrc.ec.europa.eu/ghs_buH2023.php"
+  format: "GeoTIFF"
+  resolution: "100 m 網格"
+  priority: critical
+  notes: "填補 OSM 缺失高度；可透過 GEE 取得"
+
+ghs_obat:
+  description: "GHS-OBAT 個體建築高度推估"
+  url: "https://gee-community-catalog.org/"
+  format: "GEE ImageCollection"
+  resolution: "個體建築"
+  priority: high
+  notes: "精度優於網格版 GHS-BUILT-H"
+
+taipei_lod1:
+  description: "台北市 LOD1 3D 建築模型"
+  url: "https://3d.taipei"
+  format: "CityGML / OBJ"
+  resolution: "個體建築"
+  auth: "需線上申請"
+  priority: critical
+  notes: "台北市精確 3D 建築，最高品質來源"
+
+# ──────────────────────────────────────
+# 土地覆蓋 / 植被
+# ──────────────────────────────────────
+
+esa_worldcover:
+  description: "ESA WorldCover 土地覆蓋"
+  url: "https://worldcover2021.esa.int"
+  format: "GeoTIFF"
+  resolution: "10 m"
+  priority: high
+  notes: "區分建成區/綠地/水體；影響粗糙度分類"
+
+meta_canopy_height:
+  description: "Meta/WRI 全球樹冠高度"
+  url: "s3://dataforgood-fb-data/forests/v1/alsgedi_global_v6_float/chm/"
+  format: "GeoTIFF / COG"
+  resolution: "1 m"
+  priority: high
+  notes: "樹冠高度影響粗糙度 z₀ 和風場遮蔽；可透過 GEE 取得"
+
+# ──────────────────────────────────────
+# 航空 / 無人機管制
+# ──────────────────────────────────────
+
+caa_drone_airspace:
+  description: "CAA 無人機空域圖層"
+  url: "https://drone.caa.gov.tw"
+  format: "向量（GeoJSON / KML）"
+  priority: critical
+  notes: "禁飛區 / 限飛區 / 機場四周限制區；合規性檢查必備"
+
+opensky_network:
+  description: "OpenSky Network 即時航機追蹤"
+  url: "https://opensky-network.org/api"
+  format: "REST API（JSON）"
+  resolution: "5 秒更新"
+  auth: "免費版有 API 頻率限制"
+  priority: low
+  notes: "即時有人機位置，避免衝突參考"
