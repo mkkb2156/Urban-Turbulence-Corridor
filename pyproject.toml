@@ -43,8 +43,13 @@ pipeline = [
     "scikit-image>=0.21",
     # 數值計算進階
     "xarray>=2023.10",
+    "netcdf4>=1.6",
+    # 氣候再分析
+    "cdsapi>=0.7.7",
     # 風場模型
     "windrose>=1.9",
+    # OSM 建築
+    "osmnx>=1.9",
     # 快取
     "redis>=5.0",
     # 視覺化與輸出

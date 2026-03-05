@@ -19,18 +19,24 @@ from config.settings import CRS_INTERNAL, WIND_DIRECTIONS_16
 logger = logging.getLogger(__name__)
 
 
-def _projected_width(polygon, direction_rad: float) -> float:
+def _projected_width(geom, direction_rad: float) -> float:
     """計算建物輪廓在指定方向的投影寬度。
 
     將建物頂點投影到垂直於風向的軸上，取最大值與最小值之差。
+    支援 Polygon 與 MultiPolygon。
 
     Args:
-        polygon: 建物 Shapely Polygon。
+        geom: 建物 Shapely Polygon 或 MultiPolygon。
         direction_rad: 風的「來向」角度（弧度），0=N, π/2=E。
 
     Returns:
         投影寬度（公尺）。
     """
+    from shapely.geometry import MultiPolygon
+
+    if isinstance(geom, MultiPolygon):
+        return max(_projected_width(p, direction_rad) for p in geom.geoms)
+
     # 垂直於風向的軸 = 風向 + 90°
     perp_rad = direction_rad + np.pi / 2
 
@@ -38,7 +44,7 @@ def _projected_width(polygon, direction_rad: float) -> float:
     axis_x = np.sin(perp_rad)
     axis_y = np.cos(perp_rad)
 
-    coords = np.array(polygon.exterior.coords)
+    coords = np.array(geom.exterior.coords)
     projections = coords[:, 0] * axis_x + coords[:, 1] * axis_y
 
     return float(projections.max() - projections.min())
@@ -101,6 +107,14 @@ def compute_fai_single_direction(
         if geom.is_empty or not geom.is_valid:
             frontal_areas.append(0.0)
             continue
+        # overlay intersection 可能產生 GeometryCollection，提取面幾何
+        if geom.geom_type == "GeometryCollection":
+            from shapely.ops import unary_union
+            polys = [g for g in geom.geoms if g.geom_type in ("Polygon", "MultiPolygon")]
+            if not polys:
+                frontal_areas.append(0.0)
+                continue
+            geom = unary_union(polys)
         # 投影寬度 × 建物高度 = 正面面積
         width = _projected_width(geom, direction_rad)
         frontal_areas.append(width * row["height"])

@@ -169,6 +169,120 @@ def preprocess_terrain(
     return output_path
 
 
+def download_copernicus_dem(
+    city: str = "taipei",
+    output_dir: Path | str | None = None,
+) -> Path:
+    """從 AWS S3 下載 Copernicus GLO-30 DEM 對應的 tile。
+
+    Copernicus DEM 30m 以 1°×1° tile 儲存於 S3 公開桶。
+    檔名格式: Copernicus_DSM_COG_10_N{lat}_00_E{lon}_00_DEM.tif
+
+    Args:
+        city: 城市名稱（決定下載範圍）。
+        output_dir: 下載目標目錄。
+
+    Returns:
+        合併後的 GeoTIFF 路徑。
+    """
+    import math
+
+    config = get_city_config(city)
+    minx, miny, maxx, maxy = config.bounds_4326
+
+    if output_dir is None:
+        output_dir = RAW_DIR / "terrain" / "copernicus"
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # 計算需要哪些 1°×1° tiles
+    lat_start = math.floor(miny)
+    lat_end = math.floor(maxy)
+    lon_start = math.floor(minx)
+    lon_end = math.floor(maxx)
+
+    tile_paths: list[Path] = []
+
+    for lat in range(lat_start, lat_end + 1):
+        for lon in range(lon_start, lon_end + 1):
+            ns = "N" if lat >= 0 else "S"
+            ew = "E" if lon >= 0 else "W"
+            lat_str = f"{abs(lat):02d}"
+            lon_str = f"{abs(lon):03d}"
+
+            tile_name = f"Copernicus_DSM_COG_10_{ns}{lat_str}_00_{ew}{lon_str}_00_DEM"
+            s3_url = f"https://copernicus-dem-30m.s3.amazonaws.com/{tile_name}/{tile_name}.tif"
+
+            local_path = output_dir / f"{tile_name}.tif"
+
+            if local_path.exists():
+                logger.info("Tile already downloaded: %s", local_path.name)
+                tile_paths.append(local_path)
+                continue
+
+            logger.info("Downloading Copernicus DEM tile: %s.tif", tile_name)
+            try:
+                import requests
+                response = requests.get(s3_url, timeout=120, stream=True)
+                response.raise_for_status()
+
+                with open(local_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+
+                logger.info("Downloaded: %s (%.1f MB)", tile_name, local_path.stat().st_size / 1e6)
+                tile_paths.append(local_path)
+            except Exception as e:
+                logger.warning("Failed to download %s: %s", tile_name, e)
+
+    if not tile_paths:
+        raise FileNotFoundError(f"No Copernicus DEM tiles downloaded for {city}")
+
+    # 若只有一個 tile 直接返回
+    if len(tile_paths) == 1:
+        logger.info("Single tile covers the area: %s", tile_paths[0].name)
+        return tile_paths[0]
+
+    # 合併多個 tiles
+    from rasterio.merge import merge
+
+    merged_path = output_dir / f"{city}_copernicus_merged.tif"
+    datasets = [rasterio.open(p) for p in tile_paths]
+
+    try:
+        merged_data, merged_transform = merge(datasets)
+        merged_meta = datasets[0].meta.copy()
+        merged_meta.update({
+            "driver": "GTiff",
+            "height": merged_data.shape[1],
+            "width": merged_data.shape[2],
+            "transform": merged_transform,
+        })
+
+        with rasterio.open(merged_path, "w", **merged_meta) as dst:
+            dst.write(merged_data)
+
+        logger.info("Merged %d tiles to %s", len(tile_paths), merged_path)
+    finally:
+        for ds in datasets:
+            ds.close()
+
+    return merged_path
+
+
+def download_and_process_copernicus(
+    city: str = "taipei",
+) -> Path:
+    """完整 Copernicus DEM 工作流：下載 → 重投影 → 裁切。
+
+    Returns:
+        處理後的 GeoTIFF 路徑。
+    """
+    raw_path = download_copernicus_dem(city)
+    output_path = preprocess_terrain(raw_path, city=city, terrain_type="dsm_copernicus")
+    return output_path
+
+
 if __name__ == "__main__":
     import sys
 
