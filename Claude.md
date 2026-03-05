@@ -153,17 +153,85 @@ Urban Turbulence Corridor 是一套都市風場湍流建模與無人機飛行風
 - Vercel 部署配置
 
 ### Phase 2 🔄 進行中 — 互動式 Demo
-- [ ] 地圖繪圖工具（多邊形 + 路線繪製）
-- [ ] 區域預測 API 與前端整合
-- [ ] 路線風況查詢 API
-- [ ] 最優路線規劃（LCP 擴展）
-- [ ] 動態風廊箭頭渲染
-- [ ] 時間軸播放器元件
-- [ ] 無人機型號選擇器與適配邏輯
-- [ ] 飛行高度切換 UI
-- [ ] 任務報告匯出（PDF + JSON）
-- [ ] 真實氣象數據整合（Open-Meteo 預報 API）
-- [ ] 真實建築數據整合（NLSC）
+
+#### Sprint 0：基礎設施 — 預報數據 + 地圖繪圖工具
+> 所有互動功能的前提
+
+**Backend**
+- [ ] 擴展 `src/ingest/open_meteo.py`：新增 `fetch_forecast_wind(city, days=3)`
+  - Open-Meteo Forecast API，未來 72h 逐時 wind_speed/wind_direction/wind_gusts
+- [ ] 新增 `src/api/routes/forecast.py`：
+  - `GET /api/v1/forecast?city=taipei&hours=72` → 逐時風場預報
+  - `GET /api/v1/forecast/at?lon=&lat=&hours=72` → 特定座標預報（含 log profile 降尺度）
+- [ ] 在 `src/api/main.py` 註冊新 router
+
+**Frontend**
+- [ ] 安裝 `@mapbox/mapbox-gl-draw`（相容 MapLibre GL）
+- [ ] 新建 `web/src/components/map/DrawingToolbar.tsx`：
+  - 模式切換：多邊形 / 折線 / 標記點
+  - 回調：`onPolygonComplete(geojson)`, `onRouteComplete(geojson)`
+- [ ] 整合進 `WindMap.tsx`：新增 `enableDrawing` prop
+
+#### Sprint 1：飛行高度切換 + 無人機型號適配（可與 Sprint 0 並行）
+
+**1A. 飛行高度切換 `[altitude-switch]`**
+- [ ] 擴展 `MapControls.tsx`：滑桿或按鈕組（50/80/120m + 自訂）
+- [ ] 高度變更觸發 React Query 重新取得 grid cells
+- [ ] MapLibre `setPaintProperty` 漸變過渡
+
+**1B. 無人機型號適配 `[drone-matching]`**
+- [ ] 新建 `web/src/components/drone/DroneSelector.tsx`（全局選擇器）
+- [ ] 新建 `web/src/contexts/FlightContext.tsx`（selectedDrone, selectedHeight, selectedTimeRange）
+- [ ] 擴展 `WindMap.tsx`：根據無人機 `max_wind_speed` 動態調整格網顏色
+- [ ] 擴展 `src/risk/drone_specs.py`：`get_zone_flyability()` 批量評估
+
+#### Sprint 2：動態風廊視覺化 + 時間軸播放器（依賴 Sprint 0）
+
+**2A. 動態風廊箭頭 `[wind-corridor-viz]`**
+- [ ] 新建 `web/src/components/map/WindArrowLayer.tsx`：
+  - MapLibre `symbol` 圖層 + SVG 箭頭 `icon-image`
+  - 大小 = `icon-size` 映射 wind_speed（0.3–1.5）
+  - 顏色 = risk_level（復用 `RISK_COLORS`）
+  - 旋轉 = `icon-rotate` 映射 wind_direction
+- [ ] 動畫效果：定期微調透明度模擬風流動
+
+**2B. 時間軸播放器 `[timeline-player]`**
+- [ ] 新建 `web/src/components/timeline/TimelinePlayer.tsx`：
+  - 底部固定欄：時間滑桿 + 播放/暫停/快轉
+  - 範圍：現在 → +72h，速度 1x/2x/4x
+  - 關鍵時刻標記（風速 > 閾值 → 紅點）
+- [ ] 新增 `useForecast(city, hours)` hook
+- [ ] 時間軸變更 → 通過 FlightContext 更新地圖數據
+
+#### Sprint 3：多邊形區域預測 + 路線風況查詢（依賴 Sprint 0 繪圖工具）
+
+**3A. 多邊形區域預測 `[area-prediction]`**
+- [ ] 新增 `src/api/routes/area.py`：
+  - `POST /api/v1/area/predict`
+  - 邏輯：polygon WGS84→3826 → `ST_Intersects` grid cells → 聚合風速/風險/風玫瑰
+- [ ] 新增 `src/db/queries.py`：`query_grids_by_polygon()`
+- [ ] 新建 `web/src/pages/AnalysisPage.tsx`（主互動頁面）
+
+**3B. 路線風況查詢 `[route-query]`**
+- [ ] 新增 `src/api/routes/route.py`：
+  - `POST /api/v1/route/analyze`
+  - 邏輯：waypoints 間每 100m 插值 → 查詢 grid cell → 逐段風速/逆風分量/飛行時間
+- [ ] 新建 `web/src/components/route/RouteAnalysisPanel.tsx`
+  - MapLibre `line-gradient` 按風險上色路線
+
+#### Sprint 4：最優路線規劃（依賴 Sprint 3）
+- [ ] 擴展 `src/wind/lcp.py`：`plan_optimal_route(start, end, cost_surface, mode)`
+  - 三種模式：`safest`（最低風險）/ `shortest`（最短）/ `balanced`（加權）
+  - 復用 `compute_cost_distance()` + `trace_least_cost_path()`
+- [ ] 擴展 `src/api/routes/route.py`：`POST /api/v1/route/plan`
+- [ ] 新建 `web/src/components/route/RoutePlannerPanel.tsx`
+  - 三條備選路線同時顯示 + 比較表格
+
+#### Sprint 5：任務報告匯出（依賴 Sprint 3/4）
+- [ ] 新增 `src/api/routes/report.py`：`POST /api/v1/report/generate`
+  - PDF（reportlab）/ JSON 格式
+- [ ] 新建 `web/src/components/report/ExportButton.tsx`
+  - 地圖截圖：`map.getCanvas().toDataURL()`
 
 ### Phase 3 📋 計畫中 — 生產化
 - [ ] 使用者帳戶與歷史紀錄
@@ -171,6 +239,49 @@ Urban Turbulence Corridor 是一套都市風場湍流建模與無人機飛行風
 - [ ] 禁飛區圖層疊加
 - [ ] 飛控系統 API 整合
 - [ ] 行動裝置適配
+
+---
+
+## Sprint 依賴關係
+
+```
+Sprint 0（基礎設施）
+  ├── Sprint 1（高度 + 無人機） ← 可並行
+  ├── Sprint 2（風廊 + 時間軸） ← 依賴預報 API
+  ├── Sprint 3（區域 + 路線） ← 依賴繪圖工具
+  │     └── Sprint 4（最優路線） ← 依賴路線基礎
+  └── Sprint 5（報告匯出） ← 依賴分析結果
+```
+
+---
+
+## 新增/修改檔案清單
+
+| 類型 | 檔案路徑 | 操作 |
+|------|----------|------|
+| Backend | `src/ingest/open_meteo.py` | 擴展（forecast） |
+| Backend | `src/api/routes/forecast.py` | 新建 |
+| Backend | `src/api/routes/area.py` | 新建 |
+| Backend | `src/api/routes/route.py` | 新建 |
+| Backend | `src/api/routes/report.py` | 新建 |
+| Backend | `src/api/main.py` | 擴展（註冊 routers） |
+| Backend | `src/api/schemas.py` | 擴展（新 models） |
+| Backend | `src/db/queries.py` | 擴展（polygon + nearest） |
+| Backend | `src/wind/lcp.py` | 擴展（A→B 規劃） |
+| Backend | `src/risk/drone_specs.py` | 擴展（批量評估） |
+| Frontend | `web/src/components/map/DrawingToolbar.tsx` | 新建 |
+| Frontend | `web/src/components/map/WindArrowLayer.tsx` | 新建 |
+| Frontend | `web/src/components/map/WindMap.tsx` | 擴展 |
+| Frontend | `web/src/components/map/MapControls.tsx` | 擴展 |
+| Frontend | `web/src/components/drone/DroneSelector.tsx` | 新建 |
+| Frontend | `web/src/components/timeline/TimelinePlayer.tsx` | 新建 |
+| Frontend | `web/src/components/route/RouteAnalysisPanel.tsx` | 新建 |
+| Frontend | `web/src/components/route/RoutePlannerPanel.tsx` | 新建 |
+| Frontend | `web/src/components/report/ExportButton.tsx` | 新建 |
+| Frontend | `web/src/contexts/FlightContext.tsx` | 新建 |
+| Frontend | `web/src/pages/AnalysisPage.tsx` | 新建 |
+| Frontend | `web/src/api/hooks.ts` | 擴展 |
+| Frontend | `web/src/api/types.ts` | 擴展 |
 
 ---
 
