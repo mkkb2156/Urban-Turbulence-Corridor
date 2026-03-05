@@ -232,7 +232,7 @@ def worldcover_to_roughness(
     meta["dtype"] = "float32"
 
     if output_path is None:
-        output_path = Path(worldcover_path).parent / Path(worldcover_path).stem.replace("worldcover", "roughness_z0") + ".tif"
+        output_path = Path(worldcover_path).parent / (Path(worldcover_path).stem.replace("worldcover", "roughness_z0") + ".tif")
     output_path = Path(output_path)
 
     with rasterio.open(output_path, "w", **meta) as dst:

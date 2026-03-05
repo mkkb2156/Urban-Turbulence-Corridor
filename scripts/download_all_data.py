@@ -56,20 +56,24 @@ def download_buildings(city: str) -> None:
     from src.ingest.osm_buildings import download_osm_buildings
     gdf = download_osm_buildings(city)
 
-    # GHS-BUILT-H 高度填補
-    from src.ingest.ghs_built_h import (
-        download_ghs_built_h,
-        process_ghs_built_h,
-        enrich_buildings_with_ghs,
-    )
-    from config.settings import PROCESSED_DIR
+    # GHS-BUILT-H 高度填補（非關鍵，失敗不影響 OSM 建築）
+    try:
+        from src.ingest.ghs_built_h import (
+            download_ghs_built_h,
+            process_ghs_built_h,
+            enrich_buildings_with_ghs,
+        )
+        from config.settings import PROCESSED_DIR
 
-    raw_path = download_ghs_built_h()
-    ghs_path = process_ghs_built_h(raw_path, city=city)
+        raw_path = download_ghs_built_h()
+        ghs_path = process_ghs_built_h(raw_path, city=city)
 
-    buildings_path = PROCESSED_DIR / "buildings" / f"{city}_buildings.gpkg"
-    if buildings_path.exists():
-        enrich_buildings_with_ghs(buildings_path, ghs_path)
+        buildings_path = PROCESSED_DIR / "buildings" / f"{city}_buildings.gpkg"
+        if buildings_path.exists():
+            enrich_buildings_with_ghs(buildings_path, ghs_path)
+    except Exception as e:
+        logger.warning("GHS-BUILT-H enrichment failed (non-critical): %s", e)
+        logger.info("OSM buildings saved successfully without GHS height enrichment")
 
 
 def download_landcover(city: str) -> None:

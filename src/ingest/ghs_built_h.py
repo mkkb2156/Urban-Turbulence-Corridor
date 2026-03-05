@@ -30,11 +30,11 @@ logger = logging.getLogger(__name__)
 # 格式: GHS_BUILT_H_ANBH_E2018_GLOBE_R2023A_54009_100_V1_0_R{row}_C{col}.tif
 GHS_BASE_URL = (
     "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/"
-    "GHS_BUILT_H_GLOBE_R2023A/GHS_BUILT_H_ANBH_E2018_GLOBE_R2023A_54009_100/V1-0/"
+    "GHS_BUILT_H_GLOBE_R2023A/GHS_BUILT_H_ANBH_E2018_GLOBE_R2023A_54009_100/V1-0/tiles/"
 )
 
-# 台灣大致落在 Mollweide 投影的 R4_C22 tile
-TAIWAN_TILE = "GHS_BUILT_H_ANBH_E2018_GLOBE_R2023A_54009_100_V1_0_R4_C22.tif"
+# 台灣大致落在 Mollweide 投影的 R4_C22 tile（ZIP 格式）
+TAIWAN_TILE = "GHS_BUILT_H_ANBH_E2018_GLOBE_R2023A_54009_100_V1_0_R4_C22.zip"
 
 
 def download_ghs_built_h(
@@ -55,27 +55,44 @@ def download_ghs_built_h(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    local_path = output_dir / tile_name
-    if local_path.exists():
-        logger.info("GHS-BUILT-H already downloaded: %s", local_path)
-        return local_path
+    # Check for already-extracted TIF
+    tif_name = tile_name.replace(".zip", ".tif")
+    tif_path = output_dir / tif_name
+    if tif_path.exists():
+        logger.info("GHS-BUILT-H already extracted: %s", tif_path)
+        return tif_path
 
-    url = f"{GHS_BASE_URL}{tile_name}"
-    logger.info("Downloading GHS-BUILT-H from %s", url)
+    zip_path = output_dir / tile_name
+    if not zip_path.exists():
+        url = f"{GHS_BASE_URL}{tile_name}"
+        logger.info("Downloading GHS-BUILT-H from %s", url)
 
-    import requests
-    response = requests.get(url, timeout=300, stream=True)
-    response.raise_for_status()
+        import requests
+        response = requests.get(url, timeout=300, stream=True)
+        response.raise_for_status()
 
-    with open(local_path, "wb") as f:
-        for chunk in response.iter_content(chunk_size=16384):
-            f.write(chunk)
+        with open(zip_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=16384):
+                f.write(chunk)
 
-    logger.info(
-        "Downloaded GHS-BUILT-H: %s (%.1f MB)",
-        tile_name, local_path.stat().st_size / 1e6
-    )
-    return local_path
+        logger.info(
+            "Downloaded GHS-BUILT-H: %s (%.1f MB)",
+            tile_name, zip_path.stat().st_size / 1e6
+        )
+
+    # Extract TIF from ZIP
+    import zipfile
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        tif_members = [m for m in zf.namelist() if m.endswith(".tif")]
+        if not tif_members:
+            raise FileNotFoundError(f"No .tif found in {tile_name}")
+        zf.extract(tif_members[0], output_dir)
+        extracted = output_dir / tif_members[0]
+        if extracted != tif_path:
+            extracted.rename(tif_path)
+        logger.info("Extracted: %s", tif_path.name)
+
+    return tif_path
 
 
 def process_ghs_built_h(
