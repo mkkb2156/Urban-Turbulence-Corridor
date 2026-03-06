@@ -51,13 +51,13 @@ def import_data(engine):
     from src.db.queries import import_corridors_to_db, import_grid_to_db
 
     if GRID_PATH.exists():
-        n = import_grid_to_db(GRID_PATH, city="taipei_pilot", engine=engine)
+        n = import_grid_to_db(GRID_PATH, city="taipei", engine=engine)
         logger.info("Imported %d grid cells.", n)
     else:
         logger.error("Grid file not found: %s", GRID_PATH)
 
     if CORRIDOR_PATH.exists():
-        n = import_corridors_to_db(CORRIDOR_PATH, city="taipei_pilot", engine=engine)
+        n = import_corridors_to_db(CORRIDOR_PATH, city="taipei", engine=engine)
         logger.info("Imported %d corridors.", n)
     else:
         logger.error("Corridor file not found: %s", CORRIDOR_PATH)

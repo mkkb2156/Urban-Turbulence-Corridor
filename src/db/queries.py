@@ -151,7 +151,23 @@ def import_grid_to_db(
         gdf = gdf.to_crs(CRS_INTERNAL)
 
     gdf["city"] = city
-    gdf.to_postgis("grid_cells", engine, if_exists="replace", index=False)
+
+    # 先清除該城市的舊資料，再 append（保留表結構、索引、trigger）
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM grid_cells WHERE city = :city"), {"city": city})
+
+    # 只保留 DB schema 中存在的欄位
+    db_columns = [
+        "grid_id", "city", "row", "col", "geometry",
+        "bcr", "svf", "mean_height", "max_height", "n_buildings", "z0", "zd",
+        "fai_ne", "fai_sw", "fai_max", "fai_max_direction",
+        "wind_50m", "wind_80m", "wind_120m",
+        "is_corridor", "corridor_rank", "risk_level", "risk_score",
+    ]
+    keep = [c for c in db_columns if c in gdf.columns]
+    gdf = gdf[keep]
+
+    gdf.to_postgis("grid_cells", engine, if_exists="append", index=False)
     logger.info("Imported %d grid cells to database", len(gdf))
     return len(gdf)
 
@@ -179,7 +195,20 @@ def import_corridors_to_db(
         gdf = gdf.to_crs(CRS_INTERNAL)
 
     gdf["city"] = city
-    gdf.to_postgis("wind_corridors", engine, if_exists="replace", index=False)
+
+    # 先清除該城市的舊資料，再 append（保留表結構、索引、trigger）
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM wind_corridors WHERE city = :city"), {"city": city})
+
+    # 只保留 DB schema 中存在的欄位
+    db_columns = [
+        "corridor_id", "city", "geometry", "corridor_class",
+        "total_cost", "length_cells", "estimated_width", "wind_direction",
+    ]
+    keep = [c for c in db_columns if c in gdf.columns]
+    gdf = gdf[keep]
+
+    gdf.to_postgis("wind_corridors", engine, if_exists="append", index=False)
     logger.info("Imported %d corridors to database", len(gdf))
     return len(gdf)
 
