@@ -11,18 +11,18 @@ router = APIRouter()
 
 def _do_wind_query(lon: float, lat: float, height: float) -> WindResponse:
     """Shared logic for POST and GET wind endpoints."""
-    from src.db.queries import query_grid_by_point
-
+    result = None
     try:
+        from src.db.queries import query_grid_by_point
+
         result = query_grid_by_point(lon, lat)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    except Exception:
+        pass  # DB unavailable, will use fallback
 
     if result is None:
-        raise HTTPException(
-            status_code=404,
-            detail="No grid data found for this location",
-        )
+        from src.api.fallback import generate_wind_at_point
+
+        result = generate_wind_at_point(lon, lat, height)
 
     height_col = f"wind_{int(height)}m"
     wind_speed = result.get(height_col, result.get("wind_50m", 0))

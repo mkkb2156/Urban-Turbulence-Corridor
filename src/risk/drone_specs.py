@@ -72,17 +72,28 @@ def get_drone_spec(drone_id: str) -> DroneSpec:
     """取得無人機規格。
 
     Args:
-        drone_id: 無人機 ID。
+        drone_id: 無人機 ID（支援前端連字號格式如 ``dji-mini4-pro``）。
 
     Returns:
         DroneSpec 物件。
     """
-    if drone_id not in DRONE_DATABASE:
+    # 正規化：前端送 "dji-mini4-pro"，後端 key 用 "dji_mini_4_pro"
+    normalized = drone_id.replace("-", "_")
+    _ALIAS_MAP = {
+        "dji_mini4_pro": "dji_mini_4_pro",
+        "dji_air3": "dji_air_3",
+        "dji_mavic3": "dji_mavic_3",
+        "dji_matrice350": "dji_matrice_350",
+        "dji_matrice30": "dji_matrice_30",
+    }
+    normalized = _ALIAS_MAP.get(normalized, normalized)
+
+    if normalized not in DRONE_DATABASE:
         raise ValueError(
             f"Unknown drone: {drone_id}. "
             f"Available: {list(DRONE_DATABASE.keys())}"
         )
-    return DRONE_DATABASE[drone_id]
+    return DRONE_DATABASE[normalized]
 
 
 def check_flyability(

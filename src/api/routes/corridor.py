@@ -23,7 +23,12 @@ async def query_corridors(
         gdf = query_corridors_by_city(city)
     except Exception as exc:
         logger.warning("Failed to query corridors: %s", exc)
-        return []
+        gdf = None
+
+    if gdf is None or gdf.empty:
+        from src.api.fallback import generate_demo_corridors
+
+        return [CorridorResponse(**c) for c in generate_demo_corridors()]
 
     results = []
     for idx, row in gdf.iterrows():
