@@ -108,16 +108,15 @@ def _analyze_segments(waypoints: list[list[float]], height: float) -> list[dict]
         avg_speed = sum(w["wind_speed"] for w in winds) / len(winds)
         avg_dir = sum(w["wind_direction"] for w in winds) / len(winds)
 
-        # 計算逆風分量
+        # 計算逆風/側風分量
+        from src.risk.derived import headwind_crosswind as _hcw
         seg_bearing = _bearing(p1[0], p1[1], p2[0], p2[1])
-        headwind_angle = abs(avg_dir - seg_bearing)
-        if headwind_angle > 180:
-            headwind_angle = 360 - headwind_angle
-        headwind = avg_speed * math.cos(headwind_angle * math.pi / 180)
+        wind_components = _hcw(avg_speed, avg_dir, seg_bearing)
+        headwind = wind_components["headwind"]
+        crosswind = wind_components["crosswind"]
 
         dist = _haversine(p1[0], p1[1], p2[0], p2[1])
-        cruise_speed = 10.0  # m/s 無人機巡航速度
-        effective_speed = max(2.0, cruise_speed - headwind)
+        effective_speed = wind_components["effective_groundspeed"]
         travel_time = dist / effective_speed
 
         # 最高風險
@@ -131,7 +130,9 @@ def _analyze_segments(waypoints: list[list[float]], height: float) -> list[dict]
             "bearing": round(seg_bearing, 1),
             "avg_wind_speed": round(avg_speed, 1),
             "avg_wind_direction": round(avg_dir, 1),
-            "headwind": round(headwind, 1),
+            "headwind": headwind,
+            "crosswind": crosswind,
+            "wind_effect_pct": wind_components["wind_effect_pct"],
             "risk_level": max_risk,
             "travel_time_s": round(travel_time, 1),
             "sample_points": [

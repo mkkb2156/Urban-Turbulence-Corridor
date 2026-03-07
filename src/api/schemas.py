@@ -111,6 +111,9 @@ class GridCellResponse(BaseModel):
     wind_speed: float
     wind_direction: str = "NE"
     is_corridor: bool = False
+    turbulence: float | None = None
+    gust_factor: float | None = None
+    shelter_index: float | None = None
 
 
 class WindRoseSectorResponse(BaseModel):

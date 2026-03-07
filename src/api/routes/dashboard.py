@@ -162,6 +162,7 @@ async def get_grid_cells(
             if not _table_exists(conn, "grid_cells"):
                 raise RuntimeError("grid_cells table not found")
 
+            ti_col = f"turbulence_{height}m"
             rows = conn.execute(text(f"""
                 SELECT
                     grid_id,
@@ -170,7 +171,10 @@ async def get_grid_cells(
                     risk_level,
                     COALESCE(risk_score, 0)    AS risk_score,
                     COALESCE({wind_col}, 0)    AS wind_speed,
-                    COALESCE(is_corridor, false) AS is_corridor
+                    COALESCE(is_corridor, false) AS is_corridor,
+                    {ti_col} AS turbulence,
+                    gust_factor,
+                    shelter_index
                 FROM grid_cells
             """)).fetchall()
 
@@ -189,6 +193,9 @@ async def get_grid_cells(
                         float(r._mapping["lon"]), float(r._mapping["lat"])
                     ),
                     is_corridor=bool(r._mapping["is_corridor"]),
+                    turbulence=round(float(r._mapping["turbulence"]), 4) if r._mapping["turbulence"] else None,
+                    gust_factor=round(float(r._mapping["gust_factor"]), 3) if r._mapping["gust_factor"] else None,
+                    shelter_index=round(float(r._mapping["shelter_index"]), 4) if r._mapping["shelter_index"] else None,
                 )
                 for r in rows
             ]

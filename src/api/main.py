@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from src.api.logging_config import RequestLoggingMiddleware, setup_logging
-from src.api.routes import area, corridor, dashboard, forecast, monitor, report, risk, route, tests, wind
+from src.api.routes import area, corridor, dashboard, derived, forecast, monitor, report, risk, route, tests, wind
 from src.api.schemas import HealthResponse
 
 # 初始化日誌
@@ -41,6 +41,7 @@ app.include_router(area.router, prefix="/api/v1", tags=["area"])
 app.include_router(route.router, prefix="/api/v1", tags=["route"])
 app.include_router(report.router, prefix="/api/v1", tags=["report"])
 app.include_router(monitor.router, prefix="/api/v1", tags=["monitor"])
+app.include_router(derived.router, prefix="/api/v1", tags=["derived"])
 
 
 @app.get("/health", response_model=HealthResponse)

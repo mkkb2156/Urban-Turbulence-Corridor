@@ -52,6 +52,9 @@ export interface GridCell {
   wind_speed: number;
   wind_direction: string;
   is_corridor: boolean;
+  turbulence?: number | null;
+  gust_factor?: number | null;
+  shelter_index?: number | null;
 }
 
 // ─── Corridor ──────────────────────────────────────────────────
@@ -237,6 +240,8 @@ export interface RouteSegment {
   avg_wind_speed: number;
   avg_wind_direction: number;
   headwind: number;
+  crosswind: number;
+  wind_effect_pct: number;
   risk_level: RiskLevel;
   travel_time_s: number;
   sample_points: {
@@ -352,3 +357,86 @@ export const DEFAULT_MAP_LAYERS: MapLayers = {
   wind_arrows: false,
   particles: false,
 };
+
+// ─── Derived Data (Phase 3) ──────────────────────────────────
+export interface DerivedData {
+  grid_id: string;
+  lon: number;
+  lat: number;
+  morphology: {
+    z0: number | null;
+    zd: number | null;
+    svf: number | null;
+    bcr: number | null;
+    mean_height: number | null;
+    max_height: number | null;
+    n_buildings: number | null;
+    fai_ne: number | null;
+    fai_sw: number | null;
+    fai_max: number | null;
+  };
+  wind: {
+    speed_50m: number | null;
+    speed_80m: number | null;
+    speed_120m: number | null;
+    direction_deg: number | null;
+  };
+  derived: {
+    turbulence: {
+      ti_50m: number | null;
+      ti_80m: number | null;
+      ti_120m: number | null;
+      assessment: string;
+    };
+    wind_shear: {
+      shear_50_80: number | null;
+      shear_80_120: number | null;
+      assessment: string;
+    };
+    gust: {
+      gust_factor: number | null;
+      gust_speed_50m: number | null;
+      gust_speed_80m: number | null;
+      gust_speed_120m: number | null;
+    };
+    shelter: {
+      shelter_index: number | null;
+      assessment: string;
+    };
+    altitude: {
+      min_safe_alt: number | null;
+      max_legal_alt: number | null;
+      flyable_range_m: number | null;
+    };
+  };
+  risk: {
+    level: RiskLevel;
+    score: number;
+    is_corridor: boolean;
+  };
+  generated_at: string;
+}
+
+// ─── Flight Window ──────────────────────────────────────────
+export interface FlightWindow {
+  start: string;
+  end: string;
+  hours: number;
+  avg_wind: number;
+  max_wind: number;
+  min_wind: number;
+}
+
+export interface FlightWindowsResponse {
+  lon: number;
+  lat: number;
+  drone_id: string;
+  max_wind_tolerance: number;
+  safe_wind_threshold: number;
+  source: 'open-meteo' | 'mock';
+  total_hours: number;
+  flyable_hours: number;
+  flyable_pct: number;
+  windows: FlightWindow[];
+  generated_at: string;
+}
