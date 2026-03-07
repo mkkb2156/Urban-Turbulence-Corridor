@@ -18,7 +18,7 @@ function renderWithProviders(ui: React.ReactElement) {
 describe('FlyabilityChecker', () => {
   it('should render the component title', () => {
     renderWithProviders(<FlyabilityChecker />);
-    expect(screen.getByText('Drone Flyability Checker')).toBeInTheDocument();
+    expect(screen.getByText('無人機適飛檢查')).toBeInTheDocument();
   });
 
   it('should render the drone model dropdown', () => {
@@ -57,13 +57,13 @@ describe('FlyabilityChecker', () => {
   it('should render the Check Flyability button', () => {
     renderWithProviders(<FlyabilityChecker />);
     expect(
-      screen.getByRole('button', { name: 'Check Flyability' }),
+      screen.getByRole('button', { name: '檢查適飛性' }),
     ).toBeInTheDocument();
   });
 
   it('should render labels for longitude and latitude', () => {
     renderWithProviders(<FlyabilityChecker />);
-    expect(screen.getByText('Longitude')).toBeInTheDocument();
-    expect(screen.getByText('Latitude')).toBeInTheDocument();
+    expect(screen.getByText(/經度/)).toBeInTheDocument();
+    expect(screen.getByText(/緯度/)).toBeInTheDocument();
   });
 });

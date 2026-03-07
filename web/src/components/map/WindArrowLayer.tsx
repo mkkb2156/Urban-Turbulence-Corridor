@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import type maplibregl from 'maplibre-gl';
 import type { GridCell } from '../../api/types';
 import { RISK_COLORS } from '../../utils/colors';
+import { directionToDegrees } from '../../utils/geo';
 
 /**
  * Create an SVG arrow image for MapLibre.
@@ -101,7 +102,7 @@ export default function WindArrowLayer({ map, gridCells, visible }: WindArrowLay
 
     const features: GeoJSON.Feature[] = gridCells.map((cell) => {
       // Convert direction string to degrees
-      const dirDeg = directionToDegrees(cell.wind_direction);
+      const dirDeg = directionToDegrees(cell.wind_direction) ?? 45;
       return {
         type: 'Feature' as const,
         geometry: {
@@ -124,15 +125,4 @@ export default function WindArrowLayer({ map, gridCells, visible }: WindArrowLay
   }, [map, gridCells, visible]);
 
   return null; // Render-only logic, no DOM
-}
-
-const DIRECTION_MAP: Record<string, number> = {
-  N: 0, NNE: 22.5, NE: 45, ENE: 67.5,
-  E: 90, ESE: 112.5, SE: 135, SSE: 157.5,
-  S: 180, SSW: 202.5, SW: 225, WSW: 247.5,
-  W: 270, WNW: 292.5, NW: 315, NNW: 337.5,
-};
-
-function directionToDegrees(dir: string): number {
-  return DIRECTION_MAP[dir.toUpperCase()] ?? 45;
 }

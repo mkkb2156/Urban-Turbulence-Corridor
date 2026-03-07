@@ -45,7 +45,7 @@ export default function StatsCards({ stats, isLoading }: StatsCardsProps) {
         {
           label: '風廊數量',
           value: String(stats.corridor_count),
-          subtext: '已偵測到的活躍風廊',
+          subtext: '台北都會區已識別風廊',
           icon: Route,
           color: 'text-purple-500',
         },

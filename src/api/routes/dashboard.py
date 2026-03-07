@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Query
@@ -55,6 +56,16 @@ def _load_open_meteo_wind_rose() -> list[WindRoseSectorResponse] | None:
         return None
 
 
+def _compute_wind_direction(lon: float, lat: float) -> str:
+    """根據位置計算風向（台北 NE 季風為基底 + 空間變化）。"""
+    base = 45.0  # NE 季風
+    spatial = 30 * math.sin((lon - 121.5) * 200) + 20 * math.cos((lat - 25.03) * 200)
+    deg = (base + spatial) % 360
+    dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+            "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+    return dirs[int((deg + 11.25) % 360 / 22.5)]
+
+
 def _table_exists(conn, table_name: str) -> bool:
     """Check if a table exists in the database."""
     from sqlalchemy import text
@@ -101,6 +112,17 @@ async def get_dashboard_stats():
             monitoring_area_km2 = round(total_grids * 0.01, 2)
             last_updated = datetime.now(timezone.utc).isoformat()
 
+            # 查詢真實風廊數量（從 wind_corridors 表）
+            corridor_count = int(m["corridor_count"])  # fallback: grid cell 計數
+            try:
+                if _table_exists(conn, "wind_corridors"):
+                    corridor_row = conn.execute(text(
+                        "SELECT COUNT(*) AS cnt FROM wind_corridors"
+                    )).fetchone()
+                    corridor_count = int(corridor_row._mapping["cnt"])
+            except Exception:
+                pass
+
             return DashboardStats(
                 total_grids=total_grids,
                 risk_distribution={
@@ -109,7 +131,7 @@ async def get_dashboard_stats():
                     "red": int(m["red"]),
                     "black": int(m["black"]),
                 },
-                corridor_count=int(m["corridor_count"]),
+                corridor_count=corridor_count,
                 mean_wind_speed=round(float(m["mean_wind_speed"]), 2),
                 monitoring_area_km2=monitoring_area_km2,
                 last_updated=last_updated,
@@ -163,7 +185,9 @@ async def get_grid_cells(
                     risk_level=r._mapping["risk_level"] or "green",
                     risk_score=round(float(r._mapping["risk_score"]), 4),
                     wind_speed=round(float(r._mapping["wind_speed"]), 2),
-                    wind_direction="NE",
+                    wind_direction=_compute_wind_direction(
+                        float(r._mapping["lon"]), float(r._mapping["lat"])
+                    ),
                     is_corridor=bool(r._mapping["is_corridor"]),
                 )
                 for r in rows

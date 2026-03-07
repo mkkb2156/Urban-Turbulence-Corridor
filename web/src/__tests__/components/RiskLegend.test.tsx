@@ -30,8 +30,8 @@ describe('RiskLegend', () => {
     expect(blackSwatch).toHaveStyle({ backgroundColor: '#2c3e50' });
   });
 
-  it('should render the "Risk Level" heading', () => {
+  it('should render the "風險等級" heading', () => {
     render(<RiskLegend />);
-    expect(screen.getByText('Risk Level')).toBeInTheDocument();
+    expect(screen.getByText('風險等級')).toBeInTheDocument();
   });
 });

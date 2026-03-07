@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import type maplibregl from 'maplibre-gl';
 import type { GridCell } from '../../api/types';
+import { directionToDegrees } from '../../utils/geo';
 
 interface WindParticleLayerProps {
   map: maplibregl.Map | null;
@@ -48,7 +49,7 @@ function buildWindField(cells: GridCell[]) {
 
   // Parse wind_direction from cells (string -> number)
   const parsedCells = cells.map((c) => {
-    const dirDeg = parseFloat(c.wind_direction) || 45;
+    const dirDeg = directionToDegrees(c.wind_direction) ?? 45;
     const rad = (dirDeg * Math.PI) / 180;
     // Wind "from" direction → movement vector is opposite
     const u = -c.wind_speed * Math.sin(rad);

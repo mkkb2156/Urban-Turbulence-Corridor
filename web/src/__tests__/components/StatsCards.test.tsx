@@ -51,9 +51,9 @@ describe('StatsCards', () => {
 
   it('should render all four stat labels', () => {
     render(<StatsCards stats={mockStats} />);
-    expect(screen.getByText('Grid Cells')).toBeInTheDocument();
-    expect(screen.getByText('Mean Wind Speed')).toBeInTheDocument();
-    expect(screen.getByText('Wind Corridors')).toBeInTheDocument();
-    expect(screen.getByText('Last Updated')).toBeInTheDocument();
+    expect(screen.getByText('網格數')).toBeInTheDocument();
+    expect(screen.getByText('平均風速')).toBeInTheDocument();
+    expect(screen.getByText('風廊數量')).toBeInTheDocument();
+    expect(screen.getByText('最後更新')).toBeInTheDocument();
   });
 });
