@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
-import httpx
+import requests as http_requests
 from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -34,7 +35,7 @@ class MonitorResponse(BaseModel):
     services: list[ServiceStatus]
 
 
-async def _check_database() -> ServiceStatus:
+def _check_database() -> ServiceStatus:
     """檢查 PostGIS 資料庫連線與資料量。"""
     start = time.perf_counter()
     try:
@@ -65,7 +66,7 @@ async def _check_database() -> ServiceStatus:
         )
 
 
-async def _check_open_meteo() -> ServiceStatus:
+def _check_open_meteo() -> ServiceStatus:
     """檢查 Open-Meteo API 可達性。"""
     url = (
         "https://api.open-meteo.com/v1/forecast"
@@ -74,10 +75,8 @@ async def _check_open_meteo() -> ServiceStatus:
     )
     start = time.perf_counter()
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-
+        resp = http_requests.get(url, timeout=5)
+        resp.raise_for_status()
         latency = (time.perf_counter() - start) * 1000
         logger.info("Monitor: Open-Meteo check OK (%.0fms)", latency)
         return ServiceStatus(
@@ -97,7 +96,7 @@ async def _check_open_meteo() -> ServiceStatus:
         )
 
 
-async def _check_cwa() -> ServiceStatus:
+def _check_cwa() -> ServiceStatus:
     """檢查中央氣象署 API 可達性。"""
     if not CWA_API_KEY:
         return ServiceStatus(
@@ -113,10 +112,8 @@ async def _check_cwa() -> ServiceStatus:
     )
     start = time.perf_counter()
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-
+        resp = http_requests.get(url, timeout=5)
+        resp.raise_for_status()
         latency = (time.perf_counter() - start) * 1000
         logger.info("Monitor: CWA check OK (%.0fms)", latency)
         return ServiceStatus(
@@ -139,15 +136,15 @@ async def _check_cwa() -> ServiceStatus:
 @router.get("/monitor", response_model=MonitorResponse)
 async def get_monitor_status():
     """檢查所有外部服務狀態並回傳監控報告。"""
-    import asyncio
+    # 使用 ThreadPoolExecutor 並行檢查（同步 requests 在線程中執行）
+    checks = [_check_database, _check_open_meteo, _check_cwa]
+    service_list: list[ServiceStatus] = []
 
-    services = await asyncio.gather(
-        _check_database(),
-        _check_open_meteo(),
-        _check_cwa(),
-    )
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {executor.submit(fn): fn for fn in checks}
+        for future in as_completed(futures):
+            service_list.append(future.result())
 
-    service_list = list(services)
     up_count = sum(1 for s in service_list if s.status == "up")
     total = len(service_list)
 
