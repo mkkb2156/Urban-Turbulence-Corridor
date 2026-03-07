@@ -97,182 +97,178 @@ export default function GuidePage() {
       <div>
         <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
           <BookOpen size={24} className="text-indigo-500" />
-          How to Use
+          使用指南
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Urban Turbulence Corridor (UTC) system user guide
+          城市風廊系統 (UTC) 使用者指南
         </p>
       </div>
 
       {/* What is UTC */}
-      <Section title="What is UTC?">
+      <Section title="什麼是 UTC？">
         <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-          <strong>Urban Turbulence Corridor (UTC)</strong> is an urban wind risk assessment system
-          designed for drone low-altitude operations. It integrates multi-source weather data,
-          building morphology, terrain analysis, and airspace regulations to identify wind corridors
-          and quantify turbulence risk across urban environments.
+          城市風廊系統 (Urban Turbulence Corridor, UTC) 是專為無人機低空飛行設計的城市風險評估系統。整合多源氣象資料、建築形態、地形分析與空域法規，識別風廊並量化城市環境中的亂流風險。
         </p>
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
             <Zap size={16} className="mb-1 text-blue-500" />
-            <p className="text-xs font-semibold text-blue-800 dark:text-blue-300">Real-time Wind Data</p>
-            <p className="text-xs text-blue-600 dark:text-blue-400">Open-Meteo + CWA weather stations</p>
+            <p className="text-xs font-semibold text-blue-800 dark:text-blue-300">即時風場資料</p>
+            <p className="text-xs text-blue-600 dark:text-blue-400">Open-Meteo + 中央氣象署測站</p>
           </div>
           <div className="rounded-lg bg-green-50 p-3 dark:bg-green-900/20">
             <Wind size={16} className="mb-1 text-green-500" />
-            <p className="text-xs font-semibold text-green-800 dark:text-green-300">Wind Corridor Detection</p>
-            <p className="text-xs text-green-600 dark:text-green-400">Minimum-cost pathfinding algorithm</p>
+            <p className="text-xs font-semibold text-green-800 dark:text-green-300">風廊偵測</p>
+            <p className="text-xs text-green-600 dark:text-green-400">最小成本路徑演算法</p>
           </div>
           <div className="rounded-lg bg-purple-50 p-3 dark:bg-purple-900/20">
             <AlertTriangle size={16} className="mb-1 text-purple-500" />
-            <p className="text-xs font-semibold text-purple-800 dark:text-purple-300">Drone Flyability</p>
-            <p className="text-xs text-purple-600 dark:text-purple-400">5 DJI drone models supported</p>
+            <p className="text-xs font-semibold text-purple-800 dark:text-purple-300">無人機適飛評估</p>
+            <p className="text-xs text-purple-600 dark:text-purple-400">支援 5 款 DJI 機型</p>
           </div>
         </div>
       </Section>
 
       {/* Quick Start */}
-      <Section title="Quick Start (3 Steps)">
+      <Section title="快速開始（3 步驟）">
         <ol className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
           <li className="flex gap-3">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">1</span>
             <div>
-              <strong>Check the Dashboard</strong> — View overall wind risk distribution, active corridors, and current wind statistics for the Taipei pilot area.
+              <strong>查看儀表板</strong> — 瀏覽整體風險分布、活躍風廊及台北試驗區域的即時風速統計。
             </div>
           </li>
           <li className="flex gap-3">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">2</span>
             <div>
-              <strong>Analyze Your Flight Area</strong> — Go to Flight Analysis, draw a polygon on the map around your planned flight zone, and get detailed wind/risk assessment.
+              <strong>分析飛行區域</strong> — 前往飛行分析頁面，在地圖上繪製多邊形圈選計畫飛行區域，取得詳細的風場與風險評估。
             </div>
           </li>
           <li className="flex gap-3">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">3</span>
             <div>
-              <strong>Check Drone Flyability</strong> — Select your drone model and flight height to see if conditions are safe for your specific aircraft.
+              <strong>檢查無人機適飛性</strong> — 選擇無人機機型與飛行高度，確認目前條件是否適合該機型飛行。
             </div>
           </li>
         </ol>
       </Section>
 
       {/* Page Guide */}
-      <Section title="Page Guide">
+      <Section title="頁面導覽">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <PageCard
             to="/"
             icon={LayoutDashboard}
-            title="Dashboard"
-            description="Wind risk overview with stats cards, wind rose chart (16 directions), risk distribution, and interactive grid map. Shows real-time data from 1,470 grid cells."
+            title="儀表板"
+            description="風險總覽，包含統計卡片、風花圖（16 方位）、風險分布及互動式網格地圖。顯示 1,470 個網格的即時資料。"
           />
           <PageCard
             to="/analysis"
             icon={Navigation}
-            title="Flight Analysis"
-            description="Draw polygons for area analysis, set waypoints for route analysis, or plan optimal routes between two points. Supports 3 modes: safest, shortest, balanced."
+            title="飛行分析"
+            description="繪製多邊形進行區域分析、設定航點進行路線分析，或規劃兩點間最佳路線。支援 3 種模式：最安全、最短、平衡。"
           />
           <PageCard
             to="/corridors"
             icon={Wind}
-            title="Wind Corridors"
-            description="View identified wind corridors (primary rivers, secondary streets). Click a corridor to see wind speed, direction, and risk level details."
+            title="風廊"
+            description="檢視已識別的風廊（主要河道、次要街道）。點擊風廊可查看風速、風向及風險等級詳情。"
           />
           <PageCard
             to="/risk"
             icon={AlertTriangle}
-            title="Risk Assessment"
-            description="Color-coded risk map with drone flyability checker. Select your drone model (DJI Mini 4 Pro, Air 3, Mavic 3, Matrice 350/30) and check if flight is safe."
+            title="風險評估"
+            description="色碼風險地圖與無人機適飛檢查。選擇機型（DJI Mini 4 Pro、Air 3、Mavic 3、Matrice 350/30）並檢查是否可安全飛行。"
           />
           <PageCard
             to="/fai"
             icon={BarChart3}
-            title="FAI Analysis"
-            description="Frontal Area Index scatter plot: terrain roughness vs. FAI value. Higher FAI = denser buildings = more turbulence. Blue (open) to Red (dense urban)."
+            title="FAI 分析"
+            description="正面面積指數散佈圖：地形粗糙度 vs FAI 值。FAI 越高 = 建築越密集 = 亂流越強。藍色（開闊）至紅色（密集都市）。"
           />
           <PageCard
             to="/monitor"
             icon={Activity}
-            title="System Monitor"
-            description="Real-time health check for database, Open-Meteo API, and CWA weather API. Shows latency, status, and data counts."
+            title="系統監控"
+            description="即時健康檢查，包含資料庫、Open-Meteo API 及中央氣象署 API。顯示延遲、狀態及資料筆數。"
           />
         </div>
       </Section>
 
       {/* Risk Levels */}
-      <Section title="Risk Level Reference">
+      <Section title="風險等級對照表">
         <div className="space-y-2">
-          <RiskBadge level="green" label="Safe for most drones" speed="<= 5 m/s" />
-          <RiskBadge level="yellow" label="Caution — moderate wind" speed="5 ~ 8 m/s" />
-          <RiskBadge level="red" label="High risk — enterprise drones only" speed="8 ~ 12 m/s" />
-          <RiskBadge level="black" label="No-fly — exceeds all drone limits" speed="> 12 m/s" />
+          <RiskBadge level="green" label="大多數無人機可安全飛行" speed="<= 5 m/s" />
+          <RiskBadge level="yellow" label="注意 — 中等風速" speed="5 ~ 8 m/s" />
+          <RiskBadge level="red" label="高風險 — 僅限企業級無人機" speed="8 ~ 12 m/s" />
+          <RiskBadge level="black" label="禁飛 — 超過所有無人機限制" speed="> 12 m/s" />
         </div>
         <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-          Wind speeds are measured at 3 height layers: 50m, 80m, and 120m AGL (Above Ground Level).
-          Height correction uses power-law wind profile with urban roughness parameters.
+          風速於 3 個高度層進行量測：50m、80m、120m AGL（地面以上高度）。高度修正採用冪律風廓線搭配都市粗糙度參數。
         </p>
       </Section>
 
       {/* API Documentation */}
-      <Section title="API Endpoints">
+      <Section title="API 端點">
         <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
           Base URL: <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">/api/v1</code>
           &nbsp;&middot;&nbsp;
           <a href="/api/v1/docs" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">
-            Interactive Docs (Swagger) <ExternalLink size={12} className="mb-0.5 inline" />
+            互動式文件 (Swagger) <ExternalLink size={12} className="mb-0.5 inline" />
           </a>
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                <th className="pb-2 pr-3">Method</th>
-                <th className="pb-2 pr-3">Endpoint</th>
-                <th className="pb-2">Description</th>
+                <th className="pb-2 pr-3">方法</th>
+                <th className="pb-2 pr-3">端點</th>
+                <th className="pb-2">說明</th>
               </tr>
             </thead>
             <tbody>
-              <ApiRow method="GET" path="/wind?lon=&lat=&height=" desc="Query wind speed at a point" />
-              <ApiRow method="GET" path="/corridors?city=taipei" desc="List wind corridors" />
-              <ApiRow method="GET" path="/stats" desc="Dashboard summary statistics" />
-              <ApiRow method="GET" path="/grids?height=50" desc="All grid cells for map rendering" />
-              <ApiRow method="GET" path="/wind-rose" desc="16-sector wind rose data" />
-              <ApiRow method="GET" path="/risk?lon=&lat=&height=&drone_id=" desc="Risk assessment with drone check" />
-              <ApiRow method="GET" path="/fai?height=50" desc="Frontal Area Index data" />
-              <ApiRow method="GET" path="/forecast?city=taipei&hours=72" desc="Hourly wind forecast (up to 7 days)" />
-              <ApiRow method="GET" path="/forecast/stations?region=taipei" desc="CWA weather station observations" />
-              <ApiRow method="POST" path="/area/predict" desc="Area polygon wind analysis" />
-              <ApiRow method="POST" path="/route/analyze" desc="Route waypoint wind analysis" />
-              <ApiRow method="POST" path="/route/plan" desc="Optimal route planning (3 modes)" />
-              <ApiRow method="GET" path="/monitor" desc="System health check" />
+              <ApiRow method="GET" path="/wind?lon=&lat=&height=" desc="查詢指定點風速" />
+              <ApiRow method="GET" path="/corridors?city=taipei" desc="列出風廊" />
+              <ApiRow method="GET" path="/stats" desc="儀表板摘要統計" />
+              <ApiRow method="GET" path="/grids?height=50" desc="地圖渲染用網格資料" />
+              <ApiRow method="GET" path="/wind-rose" desc="16 方位風花圖資料" />
+              <ApiRow method="GET" path="/risk?lon=&lat=&height=&drone_id=" desc="風險評估含無人機檢查" />
+              <ApiRow method="GET" path="/fai?height=50" desc="正面面積指數資料" />
+              <ApiRow method="GET" path="/forecast?city=taipei&hours=72" desc="逐時風速預報（最多 7 天）" />
+              <ApiRow method="GET" path="/forecast/stations?region=taipei" desc="中央氣象署測站觀測資料" />
+              <ApiRow method="POST" path="/area/predict" desc="區域多邊形風場分析" />
+              <ApiRow method="POST" path="/route/analyze" desc="航線航點風場分析" />
+              <ApiRow method="POST" path="/route/plan" desc="最佳路線規劃（3 種模式）" />
+              <ApiRow method="GET" path="/monitor" desc="系統健康檢查" />
             </tbody>
           </table>
         </div>
       </Section>
 
       {/* Data Sources */}
-      <Section title="Data Sources">
+      <Section title="資料來源">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
             <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Open-Meteo</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Hourly wind speed/direction at 10m, 80m, 120m. Historical archive + 7-day forecast.
+              10m、80m、120m 逐時風速／風向。歷史資料庫 + 7 天預報。
             </p>
           </div>
           <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">CWA (Central Weather Administration)</p>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">中央氣象署 (CWA)</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Real-time automatic weather station observations. 9 stations in Taipei area.
+              即時自動氣象站觀測資料。台北地區 9 個測站。
             </p>
           </div>
           <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
             <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">ESA WorldCover</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              10m resolution land use classification for terrain roughness estimation.
+              10m 解析度土地利用分類，用於地形粗糙度估算。
             </p>
           </div>
           <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
             <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">GHS-BUILT-H (JRC)</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              100m resolution building height data for FAI (Frontal Area Index) computation.
+              100m 解析度建築高度資料，用於 FAI（正面面積指數）計算。
             </p>
           </div>
         </div>

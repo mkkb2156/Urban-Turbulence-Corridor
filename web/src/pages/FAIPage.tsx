@@ -42,10 +42,10 @@ export default function FAIPage() {
       <div>
         <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
           <BarChart3 size={24} className="text-blue-500" />
-          Frontal Area Index (FAI) Analysis
+          正面面積指數 (FAI) 分析
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Building frontal area index visualization for wind turbulence estimation
+          建築正面面積指數視覺化，用於風場亂流估算
         </p>
       </div>
 
@@ -53,12 +53,9 @@ export default function FAIPage() {
       <div className="card flex items-start gap-3 bg-blue-50 dark:bg-blue-900/20">
         <Info size={18} className="mt-0.5 shrink-0 text-blue-500" />
         <div className="text-sm text-blue-800 dark:text-blue-200">
-          <p className="font-medium">What is FAI?</p>
+          <p className="font-medium">什麼是 FAI？</p>
           <p className="mt-1 text-xs text-blue-600 dark:text-blue-300">
-            The Frontal Area Index (FAI) measures the ratio of building frontal
-            area to the total plan area. Higher FAI values indicate greater
-            wind obstruction and turbulence potential. Values typically range
-            from 0 (open terrain) to 2+ (dense urban core).
+            正面面積指數 (FAI) 衡量建築物正面面積與總平面面積的比值。FAI 值越高表示風的阻擋越大、亂流潛力越強。數值範圍通常從 0（開闊地形）到 2+（密集都市核心）。
           </p>
         </div>
       </div>
@@ -79,7 +76,7 @@ export default function FAIPage() {
       {/* FAI scatter chart: terrain roughness vs FAI */}
       <div className="card">
         <h3 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
-          Terrain Roughness vs FAI
+          地形粗糙度 vs FAI
         </h3>
         {faiLoading ? (
           <div className="flex h-64 items-center justify-center">
@@ -93,9 +90,9 @@ export default function FAIPage() {
                 <XAxis
                   type="number"
                   dataKey="x"
-                  name="Terrain Roughness"
+                  name="地形粗糙度"
                   label={{
-                    value: 'Terrain Roughness',
+                    value: '地形粗糙度',
                     position: 'bottom',
                     fontSize: 12,
                   }}
@@ -114,7 +111,7 @@ export default function FAIPage() {
                 <Tooltip
                   formatter={(value: number, name: string) => [
                     value.toFixed(3),
-                    name === 'x' ? 'Terrain Roughness' : 'FAI',
+                    name === 'x' ? '地形粗糙度' : 'FAI',
                   ]}
                   labelFormatter={() => ''}
                 />
@@ -128,7 +125,7 @@ export default function FAIPage() {
           </div>
         ) : (
           <div className="flex h-64 items-center justify-center text-sm text-gray-400">
-            No FAI data available for the selected height.
+            所選高度無可用的 FAI 資料。
           </div>
         )}
       </div>
@@ -136,7 +133,7 @@ export default function FAIPage() {
       {/* FAI color scale legend */}
       <div className="card">
         <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
-          FAI Color Scale
+          FAI 色階
         </h3>
         <div className="flex items-center gap-1">
           {Array.from({ length: 20 }).map((_, i) => {
@@ -151,9 +148,9 @@ export default function FAIPage() {
           })}
         </div>
         <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
-          <span>0 (Open)</span>
+          <span>0（開闊）</span>
           <span>1.0</span>
-          <span>2.0+ (Dense)</span>
+          <span>2.0+（密集）</span>
         </div>
       </div>
     </div>

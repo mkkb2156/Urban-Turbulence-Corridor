@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query as QueryParam
 
-from src.api.schemas import PointQuery, RiskResponse
+from src.api.schemas import BatchPointQuery, BatchRiskResponse, PointQuery, RiskResponse
 
 router = APIRouter()
 
@@ -74,3 +74,30 @@ async def query_risk(query: PointQuery):
     若提供無人機型號，額外返回可飛性評估。
     """
     return _do_risk_query(query.lon, query.lat, query.height, query.drone_id)
+
+
+@router.post("/risk/batch", response_model=BatchRiskResponse)
+async def query_risk_batch(query: BatchPointQuery):
+    """批次查詢多個座標的風險等級。
+
+    接受最多 100 個點位，回傳所有結果及統計摘要。
+    """
+    results = []
+    flyable = 0
+    not_flyable = 0
+
+    for pt in query.points:
+        r = _do_risk_query(pt.lon, pt.lat, pt.height, pt.drone_id)
+        results.append(r)
+        if r.flyability:
+            if r.flyability.get("flyable"):
+                flyable += 1
+            else:
+                not_flyable += 1
+
+    return BatchRiskResponse(
+        results=results,
+        total=len(results),
+        flyable_count=flyable,
+        not_flyable_count=not_flyable,
+    )

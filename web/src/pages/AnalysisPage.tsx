@@ -321,9 +321,9 @@ export default function AnalysisPage() {
   const isLoading = areaMutation.isPending || routeMutation.isPending || planMutation.isPending;
 
   const tabs: { id: AnalysisTab; icon: typeof Pentagon; label: string; drawHint: string }[] = [
-    { id: 'area', icon: Pentagon, label: 'Area Analysis', drawHint: 'Draw polygon (click 3+ points)' },
-    { id: 'route', icon: Route, label: 'Route Query', drawHint: 'Draw route (click 2+ points)' },
-    { id: 'plan', icon: Navigation, label: 'Route Plan', drawHint: 'Set start & end points' },
+    { id: 'area', icon: Pentagon, label: '區域分析', drawHint: '繪製多邊形（點擊 3+ 個點）' },
+    { id: 'route', icon: Route, label: '路線查詢', drawHint: '繪製路線（點擊 2+ 個點）' },
+    { id: 'plan', icon: Navigation, label: '路線規劃', drawHint: '設定起點與終點' },
   ];
 
   const activeTab = tabs.find((t) => t.id === tab)!;
@@ -336,7 +336,7 @@ export default function AnalysisPage() {
         className="fixed bottom-20 right-3 z-30 flex items-center gap-1 rounded-full bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-lg md:hidden"
       >
         {mobilePanel ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-        {mobilePanel ? 'Map' : 'Panel'}
+        {mobilePanel ? '地圖' : '面板'}
       </button>
 
       {/* Left sidebar / Mobile bottom sheet */}
@@ -374,7 +374,7 @@ export default function AnalysisPage() {
 
         {/* Height selector */}
         <div className="flex items-center gap-2 rounded-md bg-white px-3 py-2 shadow-md dark:bg-gray-800">
-          <span className="text-xs font-medium text-gray-500">Height</span>
+          <span className="text-xs font-medium text-gray-500">高度</span>
           <div className="flex gap-1">
             {([50, 80, 120] as const).map((h) => (
               <button
@@ -395,7 +395,7 @@ export default function AnalysisPage() {
         <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
           {activeTab.drawHint}
           {drawnPoints.length > 0 && (
-            <span className="ml-1 font-medium">({drawnPoints.length} points)</span>
+            <span className="ml-1 font-medium">({drawnPoints.length} 個點)</span>
           )}
         </div>
 
@@ -406,34 +406,34 @@ export default function AnalysisPage() {
           className="flex items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />}
-          {tab === 'area' ? 'Analyze Area' : tab === 'route' ? 'Analyze Route' : 'Plan Routes'}
+          {tab === 'area' ? '分析區域' : tab === 'route' ? '分析路線' : '規劃路線'}
         </button>
 
         {/* Results panel */}
         {areaResult && tab === 'area' && (
           <div className="space-y-3 rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-            <h3 className="text-sm font-bold text-gray-800 dark:text-white">Area Analysis</h3>
+            <h3 className="text-sm font-bold text-gray-800 dark:text-white">區域分析</h3>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="rounded bg-gray-50 p-2 dark:bg-gray-700">
-                <div className="text-gray-500">Area</div>
+                <div className="text-gray-500">面積</div>
                 <div className="font-bold">{areaResult.area_km2} km²</div>
               </div>
               <div className="rounded bg-gray-50 p-2 dark:bg-gray-700">
-                <div className="text-gray-500">Grid Cells</div>
+                <div className="text-gray-500">網格數</div>
                 <div className="font-bold">{areaResult.grid_count}</div>
               </div>
               <div className="rounded bg-gray-50 p-2 dark:bg-gray-700">
-                <div className="text-gray-500">Mean Wind</div>
+                <div className="text-gray-500">平均風速</div>
                 <div className="font-bold">{formatWindSpeed(areaResult.wind_stats.mean_speed)}</div>
               </div>
               <div className="rounded bg-gray-50 p-2 dark:bg-gray-700">
-                <div className="text-gray-500">Max Wind</div>
+                <div className="text-gray-500">最大風速</div>
                 <div className="font-bold">{formatWindSpeed(areaResult.wind_stats.max_speed)}</div>
               </div>
             </div>
             {/* Risk distribution bars */}
             <div className="space-y-1">
-              <div className="text-xs font-medium text-gray-500">Risk Distribution</div>
+              <div className="text-xs font-medium text-gray-500">風險分布</div>
               {(['green', 'yellow', 'red', 'black'] as const).map((level) => (
                 <div key={level} className="flex items-center gap-2 text-xs">
                   <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: RISK_COLORS[level] }} />
@@ -459,8 +459,8 @@ export default function AnalysisPage() {
                   ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300'
                   : 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300',
               )}>
-                {areaResult.flyability.flyable ? 'Safe to fly' : 'Risk exceeds drone tolerance'} &middot;
-                Safe area: {areaResult.flyability.safe_percentage}%
+                {areaResult.flyability.flyable ? '可安全飛行' : '風險超過無人機耐受值'} &middot;
+                安全區域: {areaResult.flyability.safe_percentage}%
               </div>
             )}
           </div>
@@ -468,22 +468,22 @@ export default function AnalysisPage() {
 
         {routeResult && tab === 'route' && (
           <div className="space-y-3 rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-            <h3 className="text-sm font-bold text-gray-800 dark:text-white">Route Analysis</h3>
+            <h3 className="text-sm font-bold text-gray-800 dark:text-white">路線分析</h3>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="rounded bg-gray-50 p-2 dark:bg-gray-700">
-                <div className="text-gray-500">Distance</div>
+                <div className="text-gray-500">距離</div>
                 <div className="font-bold">{(routeResult.total_distance_m / 1000).toFixed(1)} km</div>
               </div>
               <div className="rounded bg-gray-50 p-2 dark:bg-gray-700">
-                <div className="text-gray-500">Est. Time</div>
+                <div className="text-gray-500">預估時間</div>
                 <div className="font-bold">{Math.ceil(routeResult.total_time_s / 60)} min</div>
               </div>
               <div className="rounded bg-gray-50 p-2 dark:bg-gray-700">
-                <div className="text-gray-500">Avg Wind</div>
+                <div className="text-gray-500">平均風速</div>
                 <div className="font-bold">{formatWindSpeed(routeResult.avg_wind_speed)}</div>
               </div>
               <div className="rounded bg-gray-50 p-2 dark:bg-gray-700">
-                <div className="text-gray-500">Max Risk</div>
+                <div className="text-gray-500">最高風險</div>
                 <div className="font-bold flex items-center gap-1">
                   <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: RISK_COLORS[routeResult.max_risk] }} />
                   {routeResult.max_risk}
@@ -494,7 +494,7 @@ export default function AnalysisPage() {
             <div className="max-h-40 overflow-y-auto">
               <table className="w-full text-xs">
                 <thead className="text-gray-400">
-                  <tr><th className="text-left">Seg</th><th>Wind</th><th>Headwind</th><th>Risk</th></tr>
+                  <tr><th className="text-left">段</th><th>風速</th><th>逆風</th><th>風險</th></tr>
                 </thead>
                 <tbody>
                   {routeResult.segments.map((seg, i) => (
@@ -515,7 +515,7 @@ export default function AnalysisPage() {
 
         {planResult && tab === 'plan' && (
           <div className="space-y-3 rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-            <h3 className="text-sm font-bold text-gray-800 dark:text-white">Route Comparison</h3>
+            <h3 className="text-sm font-bold text-gray-800 dark:text-white">路線比較</h3>
             {planResult.routes.map((route) => (
               <div
                 key={route.mode}
@@ -527,7 +527,7 @@ export default function AnalysisPage() {
                   <span className="font-bold capitalize">{route.mode}</span>
                   {route.mode === planResult.recommended && (
                     <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                      Recommended
+                      推薦
                     </span>
                   )}
                 </div>

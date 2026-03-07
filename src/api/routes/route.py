@@ -1,7 +1,8 @@
-"""路線分析與最優路線規劃 API（mock data for demo）。"""
+"""路線分析與最優路線規劃 API。"""
 
 from __future__ import annotations
 
+import logging
 import math
 import random
 from datetime import datetime, timezone
@@ -9,6 +10,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -61,12 +63,24 @@ def _interpolate_points(p1: list[float], p2: list[float], interval: float = 100)
     return points
 
 
-def _mock_wind_at_point(lon: float, lat: float, height: float) -> dict:
-    """Mock 單點風場數據。"""
-    # 高度修正
+def _wind_at_point(lon: float, lat: float, height: float) -> dict:
+    """查詢單點風場，優先使用 DB，fallback 使用模擬。"""
+    height_col = f"wind_{int(height)}m" if int(height) in (50, 80, 120) else "wind_50m"
+    try:
+        from src.db.queries import query_grid_by_point
+        row = query_grid_by_point(lon, lat)
+        if row is not None:
+            speed = row.get(height_col, row.get("wind_50m", 4.0)) or 4.0
+            risk = row.get("risk_level", "green")
+            # 用 NE 季風 45 度作為預設方向
+            direction = 45.0
+            return {"wind_speed": round(speed, 1), "wind_direction": direction, "risk_level": risk}
+    except Exception as e:
+        logger.debug("Route wind query DB fallback: %s", e)
+
+    # Fallback: 模擬風場
     z0, zd = 1.0, 15.0
     h_factor = math.log(max(height - zd, 1) / z0) / math.log(10 / z0) if height > zd + z0 else 1.0
-
     base = 3.5 + 1.5 * math.sin((lon - 121.5) * 50) + random.gauss(0, 0.8)
     speed = max(0.5, round(base * h_factor, 1))
     direction = round((45 + 15 * math.sin((lat - 25.0) * 100) + random.gauss(0, 8)) % 360, 1)
@@ -90,7 +104,7 @@ def _analyze_segments(waypoints: list[list[float]], height: float) -> list[dict]
         p1, p2 = waypoints[i], waypoints[i + 1]
         sample_pts = _interpolate_points(p1, p2, interval=100)
 
-        winds = [_mock_wind_at_point(p[0], p[1], height) for p in sample_pts]
+        winds = [_wind_at_point(p[0], p[1], height) for p in sample_pts]
         avg_speed = sum(w["wind_speed"] for w in winds) / len(winds)
         avg_dir = sum(w["wind_direction"] for w in winds) / len(winds)
 

@@ -7,6 +7,7 @@ import MapControls from './MapControls';
 import RiskLegend from './RiskLegend';
 import GridPopup from './GridPopup';
 import WindArrowLayer from './WindArrowLayer';
+import WindParticleLayer from './WindParticleLayer';
 
 interface WindMapProps {
   gridCells?: GridCell[];
@@ -107,6 +108,24 @@ export default function WindMap({
         },
       });
 
+      // Corridor glow (primary only)
+      map.addLayer({
+        id: 'corridors-primary-glow',
+        type: 'line',
+        source: 'corridors',
+        filter: ['==', ['get', 'type'], 'primary'],
+        paint: {
+          'line-color': CORRIDOR_COLORS.primary,
+          'line-width': 12,
+          'line-opacity': 0.15,
+          'line-blur': 6,
+        },
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+      });
+
       // Corridor lines - primary
       map.addLayer({
         id: 'corridors-primary',
@@ -115,8 +134,8 @@ export default function WindMap({
         filter: ['==', ['get', 'type'], 'primary'],
         paint: {
           'line-color': CORRIDOR_COLORS.primary,
-          'line-width': 4,
-          'line-opacity': 0.8,
+          'line-width': 6,
+          'line-opacity': 0.85,
         },
         layout: {
           'line-cap': 'round',
@@ -138,6 +157,28 @@ export default function WindMap({
         layout: {
           'line-cap': 'round',
           'line-join': 'round',
+        },
+      });
+
+      // Corridor name labels
+      map.addLayer({
+        id: 'corridors-labels',
+        type: 'symbol',
+        source: 'corridors',
+        filter: ['==', ['get', 'type'], 'primary'],
+        layout: {
+          'symbol-placement': 'line-center',
+          'text-field': ['get', 'name'],
+          'text-size': 13,
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-anchor': 'center',
+          'text-offset': [0, -1],
+          'text-allow-overlap': false,
+        },
+        paint: {
+          'text-color': '#1e3a5f',
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2,
         },
       });
     });
@@ -252,8 +293,10 @@ export default function WindMap({
 
     setLayerVisibility('grid-cells-fill', layers.risk);
     setLayerVisibility('grid-cells-outline', layers.risk);
+    setLayerVisibility('corridors-primary-glow', layers.corridors);
     setLayerVisibility('corridors-primary', layers.corridors);
     setLayerVisibility('corridors-secondary', layers.corridors);
+    setLayerVisibility('corridors-labels', layers.corridors);
   }, [layers]);
 
   const handleClosePopup = useCallback(() => {
@@ -272,7 +315,7 @@ export default function WindMap({
           <div className="flex items-center gap-2 rounded-md bg-white px-4 py-2 shadow dark:bg-gray-800">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
             <span className="text-sm text-gray-600 dark:text-gray-300">
-              Loading map data...
+              載入地圖資料中...
             </span>
           </div>
         </div>
@@ -293,6 +336,13 @@ export default function WindMap({
         map={mapRef.current}
         gridCells={gridCells}
         visible={layers.wind_arrows}
+      />
+
+      {/* Wind particle animation layer */}
+      <WindParticleLayer
+        map={mapRef.current}
+        gridCells={gridCells}
+        visible={layers.particles}
       />
 
       {/* Risk legend */}

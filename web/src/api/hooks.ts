@@ -18,6 +18,8 @@ import type {
   RouteAnalyzeResponse,
   RoutePlanResponse,
   MonitorResponse,
+  BatchPointQuery,
+  BatchRiskResponse,
 } from './types';
 
 // ─── Query Keys ────────────────────────────────────────────────
@@ -185,6 +187,14 @@ export function useRouteAnalysis() {
   return useMutation({
     mutationFn: (req: { waypoints: [number, number][]; height?: number; drone_id?: string }) =>
       apiClient.post<RouteAnalyzeResponse>('/route/analyze', req),
+  });
+}
+
+// ─── Batch Risk Check ─────────────────────────────────────────
+export function useBatchRiskCheck() {
+  return useMutation({
+    mutationFn: (req: BatchPointQuery) =>
+      apiClient.post<BatchRiskResponse>('/risk/batch', req),
   });
 }
 

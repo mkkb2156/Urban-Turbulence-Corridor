@@ -28,7 +28,7 @@ export default function GridPopup({ cell, onClose }: GridPopupProps) {
         <button
           onClick={onClose}
           className="rounded p-0.5 text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-600"
-          aria-label="Close popup"
+          aria-label="關閉彈窗"
         >
           <X size={14} />
         </button>
@@ -39,7 +39,7 @@ export default function GridPopup({ cell, onClose }: GridPopupProps) {
         <div className="flex items-start gap-2">
           <MapPin size={14} className="mt-0.5 shrink-0 text-gray-400" />
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Grid ID</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">網格 ID</div>
             <div className="text-sm font-mono text-gray-800 dark:text-gray-100">
               {cell.grid_id}
             </div>
@@ -52,9 +52,9 @@ export default function GridPopup({ cell, onClose }: GridPopupProps) {
         <div className="flex items-start gap-2">
           <Wind size={14} className="mt-0.5 shrink-0 text-gray-400" />
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Wind</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">風場</div>
             <div className="text-sm text-gray-800 dark:text-gray-100">
-              {formatWindSpeed(cell.wind_speed)} from {cell.wind_direction}
+              {formatWindSpeed(cell.wind_speed)} 來自 {cell.wind_direction}
             </div>
           </div>
         </div>
@@ -62,7 +62,7 @@ export default function GridPopup({ cell, onClose }: GridPopupProps) {
         <div className="flex items-start gap-2">
           <AlertTriangle size={14} className="mt-0.5 shrink-0 text-gray-400" />
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Risk Score</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">風險分數</div>
             <div className="text-sm text-gray-800 dark:text-gray-100">
               {formatRiskScore(cell.risk_score)}
             </div>
@@ -71,7 +71,7 @@ export default function GridPopup({ cell, onClose }: GridPopupProps) {
 
         {cell.is_corridor && (
           <div className="mt-1 rounded bg-blue-50 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-            This grid is within a wind corridor
+            此網格位於風廊範圍內
           </div>
         )}
       </div>

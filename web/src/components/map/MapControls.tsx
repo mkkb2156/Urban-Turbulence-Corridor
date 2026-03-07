@@ -37,10 +37,11 @@ export default function MapControls({
   };
 
   const layerOptions: { key: keyof MapLayers; label: string }[] = [
-    { key: 'risk', label: 'Risk Grid' },
-    { key: 'fai', label: 'FAI Overlay' },
-    { key: 'corridors', label: 'Wind Corridors' },
-    { key: 'wind_arrows', label: 'Wind Arrows' },
+    { key: 'risk', label: '風險網格' },
+    { key: 'fai', label: 'FAI 圖層' },
+    { key: 'corridors', label: '風廊' },
+    { key: 'wind_arrows', label: '風箭頭' },
+    { key: 'particles', label: '風場動畫' },
   ];
 
   return (
@@ -48,7 +49,7 @@ export default function MapControls({
       {/* Height selector */}
       <div className="rounded-md bg-white shadow-md dark:bg-gray-800">
         <div className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
-          Height
+          高度
         </div>
         <div className="flex gap-1 px-2 pb-2">
           {HEIGHT_OPTIONS.map((h) => (
@@ -76,7 +77,7 @@ export default function MapControls({
         >
           <Layers size={16} className="text-gray-600 dark:text-gray-300" />
           <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-            Layers
+            圖層
           </span>
           <ChevronDown
             size={14}

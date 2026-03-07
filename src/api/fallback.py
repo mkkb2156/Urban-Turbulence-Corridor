@@ -63,16 +63,25 @@ def get_current_wind(
         return _wind_cache["data"]
 
     try:
-        from src.ingest.open_meteo import fetch_forecast_wind
+        import requests
 
-        df = fetch_forecast_wind(city="taipei", hours=1, lat=lat, lon=lon)
-        if not df.empty:
-            row = df.iloc[0]
-            result = (float(row["wind_speed"]), float(row["wind_direction"]))
-            _wind_cache["data"] = result
-            _wind_cache["time"] = now
-            logger.info("Fallback: fetched live wind from Open-Meteo: %.1f m/s @ %.0f°", *result)
-            return result
+        url = (
+            "https://api.open-meteo.com/v1/forecast"
+            f"?latitude={lat}&longitude={lon}"
+            "&current=wind_speed_10m,wind_direction_10m"
+            "&timezone=auto"
+        )
+        resp = requests.get(url, timeout=3)
+        if resp.ok:
+            data = resp.json().get("current", {})
+            ws = data.get("wind_speed_10m")
+            wd = data.get("wind_direction_10m")
+            if ws is not None and wd is not None:
+                result = (float(ws), float(wd))
+                _wind_cache["data"] = result
+                _wind_cache["time"] = now
+                logger.info("Fallback: live wind from Open-Meteo: %.1f m/s @ %.0f°", *result)
+                return result
     except Exception as e:
         logger.warning("Fallback: Open-Meteo fetch failed, using Taipei average: %s", e)
 

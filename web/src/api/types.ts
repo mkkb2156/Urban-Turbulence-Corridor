@@ -306,6 +306,31 @@ export interface MonitorResponse {
   services: MonitorService[];
 }
 
+// ─── Batch Risk Query ─────────────────────────────────────────
+export interface BatchPointQuery {
+  points: { lon: number; lat: number; height?: number; drone_id?: string }[];
+}
+
+export interface BatchRiskResult {
+  grid_id: string;
+  risk_level: string;
+  risk_label: string;
+  risk_score: number;
+  wind_speed_50m?: number;
+  wind_speed_80m?: number;
+  wind_speed_120m?: number;
+  fai_ne?: number;
+  is_corridor: boolean;
+  flyability?: DroneFlyability;
+}
+
+export interface BatchRiskResponse {
+  results: BatchRiskResult[];
+  total: number;
+  flyable_count: number;
+  not_flyable_count: number;
+}
+
 // ─── Height Options ────────────────────────────────────────────
 export type HeightOption = 50 | 80 | 120;
 
@@ -317,6 +342,7 @@ export interface MapLayers {
   fai: boolean;
   corridors: boolean;
   wind_arrows: boolean;
+  particles: boolean;
 }
 
 export const DEFAULT_MAP_LAYERS: MapLayers = {
@@ -324,4 +350,5 @@ export const DEFAULT_MAP_LAYERS: MapLayers = {
   fai: false,
   corridors: true,
   wind_arrows: false,
+  particles: false,
 };

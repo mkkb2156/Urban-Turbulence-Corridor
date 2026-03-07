@@ -43,7 +43,12 @@ def query_grid_by_point(
                wind_50m, wind_80m, wind_120m,
                risk_level, risk_score, is_corridor
         FROM grid_cells
-        WHERE ST_Contains(
+        WHERE ST_DWithin(
+            geometry,
+            ST_Transform(ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), 3826),
+            500
+        )
+        ORDER BY ST_Distance(
             geometry,
             ST_Transform(ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), 3826)
         )

@@ -15,10 +15,10 @@ export default function TestDashboardPage() {
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
             <FlaskConical size={24} className="text-purple-500" />
-            Test Dashboard
+            測試儀表板
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Combined backend (pytest) and frontend (vitest) test results
+            後端 (pytest) 與前端 (vitest) 合併測試結果
           </p>
         </div>
         <TestRunner />
@@ -30,7 +30,7 @@ export default function TestDashboardPage() {
       {/* Test suites */}
       <div>
         <h3 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
-          Test Suites
+          測試套件
         </h3>
         {isLoading ? (
           <div className="space-y-3">
@@ -49,7 +49,7 @@ export default function TestDashboardPage() {
           </div>
         ) : (
           <div className="card text-center text-sm text-gray-500">
-            No test results available. Click "Run All Tests" to start.
+            尚無測試結果。點擊「執行所有測試」開始。
           </div>
         )}
       </div>
@@ -58,7 +58,7 @@ export default function TestDashboardPage() {
       {results && results.coverage.length > 0 && (
         <div className="card">
           <h3 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
-            Code Coverage
+            程式碼覆蓋率
           </h3>
           <div className="space-y-0.5">
             {results.coverage.map((mod) => (

@@ -93,12 +93,12 @@ export default function Layout() {
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="rounded-md p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 md:hidden"
-              aria-label="Open menu"
+              aria-label="開啟選單"
             >
               <Menu size={20} />
             </button>
             <h1 className="text-sm font-semibold text-gray-600 dark:text-gray-300">
-              <span className="hidden sm:inline">Urban Turbulence Corridor</span>
+              <span className="hidden sm:inline">城市風廊系統</span>
               <span className="sm:hidden">UTC</span>
             </h1>
           </div>
@@ -107,7 +107,7 @@ export default function Layout() {
             <button
               onClick={toggleDarkMode}
               className="rounded-md p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-              aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={darkMode ? '切換至亮色模式' : '切換至暗色模式'}
             >
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>

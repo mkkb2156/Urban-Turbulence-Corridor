@@ -23,10 +23,10 @@ export default function CorridorPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          Wind Corridors
+          風廊
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Identified urban wind corridors and their characteristics
+          已識別的城市風廊及其特性
         </p>
       </div>
 
@@ -34,7 +34,7 @@ export default function CorridorPage() {
         {/* Corridor list */}
         <div className="space-y-3 lg:col-span-1">
           <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">
-            Detected Corridors
+            已偵測風廊
           </h3>
 
           {corridorsLoading ? (
@@ -99,7 +99,7 @@ export default function CorridorPage() {
                           color: RISK_COLORS[corridor.risk_level],
                         }}
                       >
-                        {RISK_LABELS[corridor.risk_level].en}
+                        {RISK_LABELS[corridor.risk_level].zh}
                       </span>
                     </div>
                   </button>
@@ -108,7 +108,7 @@ export default function CorridorPage() {
             </ul>
           ) : (
             <div className="card text-center text-sm text-gray-500">
-              No corridors detected at the current resolution.
+              目前解析度下未偵測到風廊。
             </div>
           )}
         </div>
@@ -131,18 +131,18 @@ export default function CorridorPage() {
       {selectedCorridor && (
         <div className="card">
           <h3 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
-            Corridor Details: {selectedCorridor.name}
+            風廊詳情: {selectedCorridor.name}
           </h3>
           <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Type</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">類型</p>
               <p className="font-medium text-gray-800 dark:text-gray-100 capitalize">
                 {selectedCorridor.type}
               </p>
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Mean Wind Speed
+                平均風速
               </p>
               <p className="font-medium text-gray-800 dark:text-gray-100">
                 {formatWindSpeed(selectedCorridor.mean_wind_speed)}
@@ -150,7 +150,7 @@ export default function CorridorPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Dominant Direction
+                主風向
               </p>
               <p className="font-medium text-gray-800 dark:text-gray-100">
                 {selectedCorridor.dominant_direction}
@@ -158,7 +158,7 @@ export default function CorridorPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Risk Level
+                風險等級
               </p>
               <p
                 className="font-medium"

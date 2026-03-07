@@ -27,7 +27,7 @@ function StatusBadge({ status }: { status: 'up' | 'down' }) {
           status === 'up' ? 'bg-green-500' : 'bg-red-500',
         )}
       />
-      {status === 'up' ? 'Online' : 'Offline'}
+      {status === 'up' ? '在線' : '離線'}
     </span>
   );
 }
@@ -42,7 +42,7 @@ function ServiceCard({ service }: { service: MonitorService }) {
         </div>
 
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Latency: <span className="font-mono">{service.latency_ms.toFixed(0)}ms</span>
+          延遲: <span className="font-mono">{service.latency_ms.toFixed(0)}ms</span>
         </p>
 
         {service.error && (
@@ -84,10 +84,10 @@ export default function MonitorPage() {
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
             <Activity size={24} className="text-blue-500" />
-            System Monitor
+            系統監控
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Real-time health check for all external services and dependencies
+            所有外部服務與依賴項目的即時健康檢查
           </p>
         </div>
         <button
@@ -96,7 +96,7 @@ export default function MonitorPage() {
           className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
         >
           <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
-          Refresh
+          重新整理
         </button>
       </div>
 
@@ -118,27 +118,27 @@ export default function MonitorPage() {
           <div>
             <p className="text-lg font-bold capitalize text-gray-900 dark:text-white">
               {data.status === 'healthy'
-                ? 'All Systems Operational'
+                ? '所有系統正常運作'
                 : data.status === 'degraded'
-                  ? 'Partial Service Disruption'
-                  : 'Major Service Outage'}
+                  ? '部分服務中斷'
+                  : '主要服務中斷'}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Last checked: {lastChecked} &middot; Version: {data.version} &middot; Auto-refresh: 30s
+              上次檢查: {lastChecked} &middot; 版本: {data.version} &middot; 自動更新: 30 秒
             </p>
           </div>
         </div>
       ) : (
         <div className="card text-center text-sm text-gray-500">
-          Unable to fetch monitor status.
+          無法取得監控狀態。
         </div>
       )}
 
       {/* Service List */}
       <div>
         <h3 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
-          Services ({data?.services.filter((s) => s.status === 'up').length ?? 0}/
-          {data?.services.length ?? 0} online)
+          服務 ({data?.services.filter((s) => s.status === 'up').length ?? 0}/
+          {data?.services.length ?? 0} 在線)
         </h3>
         {isLoading ? (
           <div className="space-y-3">

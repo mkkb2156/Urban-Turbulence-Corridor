@@ -24,18 +24,18 @@ export default function RiskPage() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'map', label: 'Risk Map' },
-    { id: 'drone', label: 'Drone Check' },
+    { id: 'map', label: '風險地圖' },
+    { id: 'drone', label: '無人機檢查' },
   ];
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          Risk Assessment
+          風險評估
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Evaluate wind risk levels and check drone flyability
+          評估風場風險等級與無人機適飛性
         </p>
       </div>
 

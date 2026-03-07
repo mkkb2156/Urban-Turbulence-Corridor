@@ -61,6 +61,21 @@ class RiskResponse(BaseModel):
     flyability: dict | None = None
 
 
+class BatchPointQuery(BaseModel):
+    """批次風險查詢請求。"""
+
+    points: list[PointQuery] = Field(..., min_length=1, max_length=100, description="批次查詢點位（最多 100 個）")
+
+
+class BatchRiskResponse(BaseModel):
+    """批次風險查詢回應。"""
+
+    results: list[RiskResponse]
+    total: int
+    flyable_count: int = 0
+    not_flyable_count: int = 0
+
+
 class HealthResponse(BaseModel):
     """健康檢查回應。"""
 
