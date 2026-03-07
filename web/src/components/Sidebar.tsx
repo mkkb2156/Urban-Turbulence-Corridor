@@ -10,6 +10,8 @@ import {
   Navigation,
   ChevronLeft,
   ChevronRight,
+  BookOpen,
+  Activity,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -36,6 +38,8 @@ export default function Sidebar({ collapsed, onToggle, testStatus, mobileOpen, o
     { to: '/risk', icon: AlertTriangle, label: 'Risk Assessment' },
     { to: '/fai', icon: BarChart3, label: 'FAI Analysis' },
     { to: '/risk?tab=drone', icon: Plane, label: 'Drone Check' },
+    { to: '/guide', icon: BookOpen, label: 'How to Use' },
+    { to: '/monitor', icon: Activity, label: 'Monitor' },
     {
       to: '/tests',
       icon: FlaskConical,

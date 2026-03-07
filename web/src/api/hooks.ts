@@ -17,6 +17,7 @@ import type {
   AreaPredictResponse,
   RouteAnalyzeResponse,
   RoutePlanResponse,
+  MonitorResponse,
 } from './types';
 
 // ─── Query Keys ────────────────────────────────────────────────
@@ -29,6 +30,7 @@ export const queryKeys = {
   fai: (height: HeightOption) => ['fai', height] as const,
   windRose: () => ['wind-rose'] as const,
   testResults: () => ['test-results'] as const,
+  monitor: () => ['monitor'] as const,
   forecast: (city: string, hours: number) => ['forecast', city, hours] as const,
   cwaStations: (region: string) => ['cwa-stations', region] as const,
 };
@@ -112,6 +114,16 @@ export function useTestResults() {
     queryKey: queryKeys.testResults(),
     queryFn: () => apiClient.get<TestResults>('/test-results'),
     staleTime: 30 * 1000, // 30 seconds - tests might rerun
+  });
+}
+
+// ─── Monitor ─────────────────────────────────────────────────
+export function useMonitor() {
+  return useQuery({
+    queryKey: queryKeys.monitor(),
+    queryFn: () => apiClient.get<MonitorResponse>('/monitor'),
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
   });
 }
 

@@ -5,6 +5,9 @@ python-dotenv>=1.0
 requests>=2.31
 pydantic>=2.5
 
+# Async HTTP client (monitor health checks)
+httpx>=0.25
+
 # Database (optional — API gracefully handles missing DB)
 sqlalchemy>=2.0
 psycopg2-binary>=2.9

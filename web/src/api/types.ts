@@ -290,6 +290,22 @@ export interface RoutePlanResponse {
   generated_at: string;
 }
 
+// ─── Monitor ─────────────────────────────────────────────────
+export interface MonitorService {
+  name: string;
+  status: 'up' | 'down';
+  latency_ms: number;
+  details: Record<string, unknown>;
+  error?: string | null;
+}
+
+export interface MonitorResponse {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  timestamp: string;
+  version: string;
+  services: MonitorService[];
+}
+
 // ─── Height Options ────────────────────────────────────────────
 export type HeightOption = 50 | 80 | 120;
 

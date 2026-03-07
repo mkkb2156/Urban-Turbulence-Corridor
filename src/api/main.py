@@ -8,8 +8,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src.api.routes import area, corridor, dashboard, forecast, report, risk, route, tests, wind
+from src.api.logging_config import RequestLoggingMiddleware, setup_logging
+from src.api.routes import area, corridor, dashboard, forecast, monitor, report, risk, route, tests, wind
 from src.api.schemas import HealthResponse
+
+# 初始化日誌
+setup_logging()
 
 app = FastAPI(
     title="UTC — Urban Turbulence Corridor API",
@@ -17,6 +21,7 @@ app = FastAPI(
     version="0.1.0",
 )
 
+app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -35,6 +40,7 @@ app.include_router(forecast.router, prefix="/api/v1", tags=["forecast"])
 app.include_router(area.router, prefix="/api/v1", tags=["area"])
 app.include_router(route.router, prefix="/api/v1", tags=["route"])
 app.include_router(report.router, prefix="/api/v1", tags=["report"])
+app.include_router(monitor.router, prefix="/api/v1", tags=["monitor"])
 
 
 @app.get("/health", response_model=HealthResponse)
