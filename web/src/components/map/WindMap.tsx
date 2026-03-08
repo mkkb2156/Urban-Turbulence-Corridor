@@ -16,6 +16,8 @@ import RiskLegend from './RiskLegend';
 import GridPopup from './GridPopup';
 import WindArrowLayer from './WindArrowLayer';
 import WindParticleLayer from './WindParticleLayer';
+import ContourLayer from './ContourLayer';
+import RegionalWindLayer from './RegionalWindLayer';
 
 interface WindMapProps {
   gridCells?: GridCell[];
@@ -377,6 +379,21 @@ export default function WindMap({
         map={mapRef.current}
         gridCells={gridCells}
         visible={layers.particles}
+      />
+
+      {/* Contour / isoline layer (smooth interpolated field) */}
+      <ContourLayer
+        map={mapRef.current}
+        gridCells={gridCells}
+        visible={layers.contours}
+        colorMode={colorMode}
+      />
+
+      {/* Regional wind layer (large-area Open-Meteo data, visible at low zoom) */}
+      <RegionalWindLayer
+        map={mapRef.current}
+        visible={layers.particles}
+        height={height}
       />
 
       {/* Risk legend */}

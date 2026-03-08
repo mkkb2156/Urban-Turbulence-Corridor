@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plane, Navigation, Wind } from 'lucide-react';
 import type { HeightOption, MapLayers } from '../api/types';
 import { DEFAULT_MAP_LAYERS } from '../api/types';
 import type { MapColorMode } from '../utils/colors';
-import { useDashboardStats, useGridCells, useCorridors, useWindRose } from '../api/hooks';
+import { useDashboardStats, useGridCells, useCorridors, useWindRose, useForecast } from '../api/hooks';
 import WindMap from '../components/map/WindMap';
 import StatsCards from '../components/dashboard/StatsCards';
 import WindRoseChart from '../components/dashboard/WindRoseChart';
 import RiskDistribution from '../components/dashboard/RiskDistribution';
+import TimelinePlayer from '../components/timeline/TimelinePlayer';
+import WeatherCard from '../components/dashboard/WeatherCard';
+import WindProfileChart from '../components/dashboard/WindProfileChart';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -16,10 +19,17 @@ export default function DashboardPage() {
   const [layers, setLayers] = useState<MapLayers>(DEFAULT_MAP_LAYERS);
   const [colorMode, setColorMode] = useState<MapColorMode>('risk');
 
+  const [forecastIndex, setForecastIndex] = useState(0);
+
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: gridCells, isLoading: gridsLoading } = useGridCells(height);
   const { data: corridors } = useCorridors();
   const { data: windRose, isLoading: windRoseLoading } = useWindRose();
+  const { data: forecast } = useForecast('taipei', 72);
+
+  const handleForecastIndexChange = useCallback((index: number) => {
+    setForecastIndex(index);
+  }, []);
 
   const quickActions = [
     {
@@ -108,14 +118,27 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Charts row */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <WindRoseChart data={windRose} isLoading={windRoseLoading} />
+      {/* 72h forecast timeline */}
+      {forecast?.forecasts && forecast.forecasts.length > 0 && (
+        <TimelinePlayer
+          forecasts={forecast.forecasts}
+          currentIndex={forecastIndex}
+          onIndexChange={handleForecastIndexChange}
+        />
+      )}
+
+      {/* Weather overview row */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <WeatherCard forecast={forecast} />
+        <WindProfileChart forecast={forecast} />
         <RiskDistribution
           distribution={stats?.risk_distribution}
           isLoading={statsLoading}
         />
       </div>
+
+      {/* Wind rose */}
+      <WindRoseChart data={windRose} isLoading={windRoseLoading} />
     </div>
   );
 }

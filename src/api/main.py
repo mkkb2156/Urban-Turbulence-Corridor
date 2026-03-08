@@ -12,7 +12,7 @@ from src.api.auth import APIKeyMiddleware
 from src.api.errors import UTCError, utc_error_handler
 from src.api.logging_config import RequestLoggingMiddleware, setup_logging
 from src.api.rate_limit import RateLimitMiddleware
-from src.api.routes import area, corridor, dashboard, derived, forecast, monitor, report, risk, route, tests, wind
+from src.api.routes import area, corridor, dashboard, derived, forecast, monitor, report, risk, route, tests, wind, wind_regional
 from src.api.schemas import HealthResponse
 
 # 初始化日誌
@@ -57,6 +57,7 @@ app.add_middleware(APIKeyMiddleware)
 # ── API Routes ───────────────────────────────────────────────────
 app.include_router(dashboard.router, prefix="/api/v1", tags=["Dashboard"])
 app.include_router(wind.router, prefix="/api/v1", tags=["Wind"])
+app.include_router(wind_regional.router, prefix="/api/v1", tags=["Wind"])
 app.include_router(risk.router, prefix="/api/v1", tags=["Risk"])
 app.include_router(corridor.router, prefix="/api/v1", tags=["Corridors"])
 app.include_router(forecast.router, prefix="/api/v1", tags=["Forecast"])

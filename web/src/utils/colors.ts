@@ -1,3 +1,4 @@
+import chroma from 'chroma-js';
 import type { RiskLevel } from '../api/types';
 
 // ─── Risk Level Colors ─────────────────────────────────────────
@@ -35,7 +36,66 @@ export function riskColorFromScore(score: number): string {
   return RISK_COLORS[riskLevelFromScore(score)];
 }
 
-// ─── Wind Speed Color (YlOrRd scale) ──────────────────────────
+// ─── Perceptual Color Scales (chroma.js Lab space) ─────────────
+// These scales produce perceptually uniform gradients for scientific visualization
+
+/** Wind speed: Viridis-inspired warm scale (light yellow → deep red) */
+const windSpeedScale = chroma
+  .scale(['#ffffb2', '#fecc5c', '#fd8d3c', '#f03b20', '#bd0026', '#800026'])
+  .domain([0, 3, 6, 9, 12, 15])
+  .mode('lab');
+
+/** Turbulence intensity: blue → green → amber → red */
+const turbulenceScale = chroma
+  .scale(['#3b82f6', '#22c55e', '#f59e0b', '#ef4444'])
+  .domain([0.1, 0.25, 0.35, 0.5])
+  .mode('lab');
+
+/** Gust factor: green → lime → amber → orange → red */
+const gustFactorScale = chroma
+  .scale(['#22c55e', '#84cc16', '#f59e0b', '#f97316', '#ef4444'])
+  .domain([1.0, 1.5, 2.0, 2.5, 3.0])
+  .mode('lab');
+
+/** Shelter index: light blue → deep blue */
+const shelterScale = chroma
+  .scale(['#dbeafe', '#60a5fa', '#2563eb', '#1e3a8a'])
+  .domain([0.0, 0.3, 0.6, 1.0])
+  .mode('lab');
+
+/** FAI: blue → red */
+const faiScale = chroma
+  .scale(['#3b82f6', '#ef4444'])
+  .domain([0, 2])
+  .mode('lab');
+
+// ─── Accessibility: Color-blind friendly scales ────────────────
+
+/** Viridis scale for wind speed (color-blind safe) */
+const windSpeedViridis = chroma
+  .scale(['#440154', '#482777', '#3e4989', '#31688e', '#26828e', '#1f9e89', '#35b779', '#6ece58', '#b5de2b', '#fde725'])
+  .domain([0, 15])
+  .mode('lab');
+
+/** Cividis scale (color-blind optimized, blue-yellow) */
+const windSpeedCividis = chroma
+  .scale(['#00204d', '#414d6b', '#7b7b78', '#bcaf6f', '#ffea46'])
+  .domain([0, 15])
+  .mode('lab');
+
+export type AccessibilityMode = 'default' | 'viridis' | 'cividis';
+
+let currentAccessibilityMode: AccessibilityMode = 'default';
+
+export function setAccessibilityMode(mode: AccessibilityMode): void {
+  currentAccessibilityMode = mode;
+}
+
+export function getAccessibilityMode(): AccessibilityMode {
+  return currentAccessibilityMode;
+}
+
+// ─── Wind Speed Color ──────────────────────────────────────────
 const WIND_SPEED_STOPS: [number, string][] = [
   [0, '#ffffb2'],
   [3, '#fecc5c'],
@@ -46,6 +106,17 @@ const WIND_SPEED_STOPS: [number, string][] = [
 ];
 
 export function windSpeedColor(speed: number): string {
+  // Use accessibility mode scales when active
+  if (currentAccessibilityMode === 'viridis') {
+    const clamped = Math.min(Math.max(speed, 0), 15);
+    return windSpeedViridis(clamped).hex();
+  }
+  if (currentAccessibilityMode === 'cividis') {
+    const clamped = Math.min(Math.max(speed, 0), 15);
+    return windSpeedCividis(clamped).hex();
+  }
+
+  // Default: use exact stop colors for backward compatibility
   if (speed <= WIND_SPEED_STOPS[0][0]) return WIND_SPEED_STOPS[0][1];
 
   for (let i = 1; i < WIND_SPEED_STOPS.length; i++) {
@@ -61,7 +132,16 @@ export function windSpeedColor(speed: number): string {
   return WIND_SPEED_STOPS[WIND_SPEED_STOPS.length - 1][1];
 }
 
-// ─── Hex Color Interpolation ───────────────────────────────────
+/**
+ * Get wind speed color using chroma.js Lab-space interpolation.
+ * Produces smoother, more perceptually uniform gradients.
+ */
+export function windSpeedColorLab(speed: number): string {
+  const clamped = Math.min(Math.max(speed, 0), 15);
+  return windSpeedScale(clamped).hex();
+}
+
+// ─── Hex Color Interpolation (legacy) ─────────────────────────
 function hexToRgb(hex: string): [number, number, number] {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return [0, 0, 0];
@@ -98,6 +178,17 @@ export function interpolateHexColor(
   );
 }
 
+/**
+ * Interpolate between two colors in Lab space for perceptual uniformity.
+ */
+export function interpolateColorLab(
+  color1: string,
+  color2: string,
+  t: number,
+): string {
+  return chroma.mix(color1, color2, t, 'lab').hex();
+}
+
 // ─── Corridor Colors ───────────────────────────────────────────
 export const CORRIDOR_COLORS = {
   primary: '#3b82f6', // blue-500
@@ -106,65 +197,83 @@ export const CORRIDOR_COLORS = {
 
 // ─── FAI Color Scale ───────────────────────────────────────────
 export function faiColor(value: number): string {
-  // FAI typically 0-2+, map to blue-red scale
+  // Maintain exact backward compatibility at boundaries
   const clamped = Math.min(Math.max(value, 0), 2);
-  const t = clamped / 2;
-  return interpolateHexColor('#3b82f6', '#ef4444', t);
+  if (clamped === 0) return '#3b82f6';
+  if (clamped === 2) return '#ef4444';
+  return faiScale(clamped).hex();
 }
 
-// ─── Gradient Color Scale (generic) ──────────────────────────
-function gradientColor(
-  value: number,
-  min: number,
-  max: number,
-  stops: [number, string][],
-): string {
-  const clamped = Math.min(Math.max(value, min), max);
-  if (clamped <= stops[0][0]) return stops[0][1];
-  for (let i = 1; i < stops.length; i++) {
-    if (clamped <= stops[i][0]) {
-      const t = (clamped - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]);
-      return interpolateHexColor(stops[i - 1][1], stops[i][1], t);
-    }
-  }
-  return stops[stops.length - 1][1];
-}
-
-// ─── Turbulence Color Scale (blue → yellow → red) ────────────
-const TURBULENCE_STOPS: [number, string][] = [
-  [0.1, '#3b82f6'],  // blue — 低湍流
-  [0.25, '#22c55e'], // green — 適中
-  [0.35, '#f59e0b'], // amber — 中等
-  [0.50, '#ef4444'], // red — 高湍流
-];
-
+// ─── Turbulence Color Scale ────────────────────────────────────
 export function turbulenceColor(ti: number): string {
-  return gradientColor(ti, 0.1, 0.5, TURBULENCE_STOPS);
+  const clamped = Math.min(Math.max(ti, 0.1), 0.5);
+  return turbulenceScale(clamped).hex();
 }
 
-// ─── Gust Factor Color Scale (green → orange → red) ─────────
-const GUST_FACTOR_STOPS: [number, string][] = [
-  [1.0, '#22c55e'],  // green — 低陣風
-  [1.5, '#84cc16'],  // lime
-  [2.0, '#f59e0b'],  // amber
-  [2.5, '#f97316'],  // orange
-  [3.0, '#ef4444'],  // red — 高陣風
-];
-
+// ─── Gust Factor Color Scale ───────────────────────────────────
 export function gustFactorColor(gf: number): string {
-  return gradientColor(gf, 1.0, 3.0, GUST_FACTOR_STOPS);
+  const clamped = Math.min(Math.max(gf, 1.0), 3.0);
+  return gustFactorScale(clamped).hex();
 }
 
-// ─── Shelter Index Color Scale (light → dark) ────────────────
-const SHELTER_STOPS: [number, string][] = [
-  [0.0, '#dbeafe'],  // blue-100 — 低遮蔽
-  [0.3, '#60a5fa'],  // blue-400
-  [0.6, '#2563eb'],  // blue-600
-  [1.0, '#1e3a8a'],  // blue-900 — 高遮蔽
-];
-
+// ─── Shelter Index Color Scale ─────────────────────────────────
 export function shelterColor(si: number): string {
-  return gradientColor(si, 0.0, 1.0, SHELTER_STOPS);
+  const clamped = Math.min(Math.max(si, 0.0), 1.0);
+  return shelterScale(clamped).hex();
+}
+
+// ─── Continuous Gradient Bar (for legends) ─────────────────────
+
+/**
+ * Generate an array of color stops for CSS gradient rendering.
+ * Used to create smooth gradient legends instead of discrete color blocks.
+ */
+export function generateGradientStops(
+  mode: MapColorMode,
+  steps = 20,
+): { color: string; position: number }[] {
+  const stops: { color: string; position: number }[] = [];
+
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    let color: string;
+
+    switch (mode) {
+      case 'wind_speed':
+        color = windSpeedScale(t * 15).hex();
+        break;
+      case 'turbulence':
+        color = turbulenceScale(0.1 + t * 0.4).hex();
+        break;
+      case 'gust_factor':
+        color = gustFactorScale(1.0 + t * 2.0).hex();
+        break;
+      case 'shelter':
+        color = shelterScale(t).hex();
+        break;
+      case 'risk':
+      default: {
+        const riskScale = chroma
+          .scale([RISK_COLORS.green, RISK_COLORS.yellow, RISK_COLORS.red, RISK_COLORS.black])
+          .mode('lab');
+        color = riskScale(t).hex();
+        break;
+      }
+    }
+
+    stops.push({ color, position: t * 100 });
+  }
+
+  return stops;
+}
+
+/**
+ * Generate a CSS linear-gradient string for use in legend bars.
+ */
+export function gradientCSS(mode: MapColorMode, direction = 'to right'): string {
+  const stops = generateGradientStops(mode, 10);
+  const colorStops = stops.map((s) => `${s.color} ${s.position}%`).join(', ');
+  return `linear-gradient(${direction}, ${colorStops})`;
 }
 
 // ─── Color Mode Metadata ─────────────────────────────────────
@@ -210,6 +319,34 @@ export const COLOR_MODE_LEGENDS: Record<MapColorMode, { label: string; color: st
     { label: '15+ m/s', color: '#800026' },
   ],
 };
+
+// ─── Value Range Metadata (for contour generation) ─────────────
+export const COLOR_MODE_RANGES: Record<MapColorMode, { min: number; max: number; unit: string }> = {
+  risk: { min: 0, max: 100, unit: '' },
+  turbulence: { min: 0.1, max: 0.5, unit: '' },
+  gust_factor: { min: 1.0, max: 3.0, unit: '' },
+  shelter: { min: 0, max: 1, unit: '' },
+  wind_speed: { min: 0, max: 15, unit: 'm/s' },
+};
+
+/**
+ * Get the color for any value in any color mode using Lab-space interpolation.
+ */
+export function colorForValue(mode: MapColorMode, value: number): string {
+  switch (mode) {
+    case 'wind_speed':
+      return windSpeedColorLab(value);
+    case 'turbulence':
+      return turbulenceColor(value);
+    case 'gust_factor':
+      return gustFactorColor(value);
+    case 'shelter':
+      return shelterColor(value);
+    case 'risk':
+    default:
+      return riskColorFromScore(value);
+  }
+}
 
 // ─── Test Status Colors ────────────────────────────────────────
 export const TEST_STATUS_COLORS = {

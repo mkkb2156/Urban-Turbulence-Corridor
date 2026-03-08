@@ -161,6 +161,10 @@ export interface ForecastPoint {
   wind_direction: number;
   wind_gusts: number;
   risk_level: RiskLevel;
+  wind_speed_80m?: number | null;
+  wind_direction_80m?: number | null;
+  wind_speed_120m?: number | null;
+  wind_direction_120m?: number | null;
 }
 
 export interface ForecastResponse {
@@ -336,6 +340,28 @@ export interface BatchRiskResponse {
   not_flyable_count: number;
 }
 
+// ─── Regional Wind ────────────────────────────────────────────
+export interface RegionalWindPoint {
+  lon: number;
+  lat: number;
+  wind_speed: number;
+  wind_direction: number;
+  wind_gusts: number;
+  u: number;
+  v: number;
+  risk_level: RiskLevel;
+}
+
+export interface RegionalWindResponse {
+  bbox: [number, number, number, number];
+  grid: { n_lon: number; n_lat: number; resolution: number };
+  height_m: number;
+  points: RegionalWindPoint[];
+  point_count: number;
+  source: 'open-meteo' | 'mock';
+  generated_at: string;
+}
+
 // ─── Height Options ────────────────────────────────────────────
 export type HeightOption = 50 | 80 | 120;
 
@@ -348,6 +374,7 @@ export interface MapLayers {
   corridors: boolean;
   wind_arrows: boolean;
   particles: boolean;
+  contours: boolean;
 }
 
 export const DEFAULT_MAP_LAYERS: MapLayers = {
@@ -356,6 +383,7 @@ export const DEFAULT_MAP_LAYERS: MapLayers = {
   corridors: true,
   wind_arrows: false,
   particles: false,
+  contours: false,
 };
 
 // ─── Derived Data (Phase 3) ──────────────────────────────────

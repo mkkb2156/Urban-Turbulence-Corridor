@@ -51,6 +51,7 @@ export default function MapControls({
     { key: 'corridors', label: '風廊' },
     { key: 'wind_arrows', label: '風箭頭' },
     { key: 'particles', label: '風場動畫' },
+    { key: 'contours', label: '等值線' },
   ];
 
   return (
