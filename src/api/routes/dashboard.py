@@ -29,7 +29,7 @@ COMPASS_DIRECTIONS = [
 
 def _get_engine():
     """Lazy import to avoid circular imports at module load time."""
-    from src.db.queries import get_engine
+    from src.db.session import get_engine
     return get_engine()
 
 
@@ -68,17 +68,8 @@ def _compute_wind_direction(lon: float, lat: float) -> str:
 
 def _table_exists(conn, table_name: str) -> bool:
     """Check if a table exists in the database."""
-    from sqlalchemy import text
-    result = conn.execute(
-        text(
-            "SELECT EXISTS ("
-            "  SELECT FROM information_schema.tables "
-            "  WHERE table_name = :tbl"
-            ")"
-        ),
-        {"tbl": table_name},
-    ).scalar()
-    return bool(result)
+    from src.db.session import table_exists
+    return table_exists(conn, table_name)
 
 
 @router.get("/stats", response_model=DashboardStats)

@@ -168,3 +168,33 @@ class TerrainElevation(Base):
     slope_deg = Column(Float)
     aspect_deg = Column(Float)
     source = Column(Text, default="copernicus_glo30")
+
+
+class APIKey(Base):
+    """API Key。"""
+
+    __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    key_hash = Column(Text, unique=True, nullable=False)
+    name = Column(Text, nullable=False)
+    owner_email = Column(Text)
+    plan = Column(Text, nullable=False, default="free")  # free / pro / enterprise
+    rate_limit_per_min = Column(Integer, default=60)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, server_default=func.now())
+    last_used_at = Column(DateTime)
+
+
+class APIUsage(Base):
+    """API 使用量記錄。"""
+
+    __tablename__ = "api_usage"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    api_key_id = Column(Integer)  # FK to api_keys.id
+    endpoint = Column(Text, nullable=False)
+    method = Column(Text, nullable=False)
+    status_code = Column(Integer)
+    response_time_ms = Column(Float)
+    created_at = Column(DateTime, server_default=func.now())

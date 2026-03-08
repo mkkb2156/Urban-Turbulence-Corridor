@@ -20,22 +20,13 @@ router = APIRouter()
 
 
 def _get_engine():
-    from src.db.queries import get_engine
+    from src.db.session import get_engine
     return get_engine()
 
 
 def _table_exists(conn, table_name: str) -> bool:
-    from sqlalchemy import text
-    result = conn.execute(
-        text(
-            "SELECT EXISTS ("
-            "  SELECT FROM information_schema.tables "
-            "  WHERE table_name = :tbl"
-            ")"
-        ),
-        {"tbl": table_name},
-    ).scalar()
-    return bool(result)
+    from src.db.session import table_exists
+    return table_exists(conn, table_name)
 
 
 @router.get("/derived/{grid_id}")

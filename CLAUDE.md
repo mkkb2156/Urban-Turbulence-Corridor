@@ -19,13 +19,26 @@ Data:      Open-Meteo (風速預報) + CWA 中央氣象署 (測站觀測)
 ```
 web/                    # React 前端
   src/pages/            # 頁面元件 (Dashboard, Analysis, Corridor, Risk, FAI, Monitor, Guide)
-  src/components/       # 共用元件 (map/, dashboard/, drone/, timeline/, report/)
-  src/api/              # API client + TypeScript 型別
-  src/__tests__/        # Vitest 測試 (8 files)
+  src/components/       # 共用元件 (map/, dashboard/, drone/, timeline/, report/, route/, test-dashboard/)
+  src/api/              # API client (auth + retry) + TypeScript 型別
+  src/__tests__/        # Vitest 測試 (8 files, 124 tests)
 
 src/                    # Python 後端
-  api/                  # FastAPI app + routes (25 endpoints)
+  api/                  # FastAPI app + API Gateway
+    main.py             # App 入口 + middleware 註冊
+    auth.py             # API Key 認證 middleware
+    rate_limit.py        # 限流 middleware (sliding window)
+    errors.py            # 統一錯誤處理 (UTCError hierarchy)
+    response.py          # Response envelope helpers
+    schemas.py           # 所有 Pydantic request/response models (集中管理)
+    logging_config.py    # Request logging + 使用量追蹤
+    fallback.py          # DB 不可用時的 demo 資料
+    routes/              # 11 個 router 檔案 (25 endpoints)
   db/                   # SQLAlchemy models + PostGIS queries + migrations
+    session.py           # 全域 engine + connection pool + get_db() dependency
+    models.py            # ORM models (含 APIKey, APIUsage)
+    queries.py           # PostGIS 查詢函數
+    migrations/          # SQL migration 檔案 (001~003)
   ingest/               # 資料匯入模組 (CWA, Open-Meteo, ERA5, OSM, NLSC, ESA, etc.)
   morphology/           # 地形分析 (BCR, FAI, roughness, SVF, street canyon)
   risk/                 # 風險評分 + 無人機規格 + 衍生數據演算
@@ -39,8 +52,13 @@ src/                    # Python 後端
 ### 環境變數
 
 複製 `.env.example` → `.env`，至少填入：
-- `DATABASE_URL` — Supabase PostgreSQL 連線字串
+- `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` — Supabase PostgreSQL 連線資訊
 - `CWA_API_KEY` — 中央氣象署 API key（免費註冊）
+
+API 管理相關（可選）：
+- `API_KEY_REQUIRED` — `true` 啟用 API Key 認證（預設 `false`，開發模式免認證）
+- `DEFAULT_RATE_LIMIT_PER_MIN` — 預設每分鐘請求限制（預設 60）
+- `ADMIN_API_KEY` — 管理用 master key（不限流、可查看使用量）
 
 ### 前端開發
 
@@ -191,13 +209,39 @@ curl -X POST http://localhost:8000/api/v1/risk/batch \
 - ✅ `airspace_zones` — 空域限制區（結構已建，待資料填入）
 - ✅ `flight_conditions` — 時序飛行條件（結構已建，待定期匯入）
 - ✅ `terrain_elevation` — 地形高程（結構已建，待 DEM 資料）
-- ✅ DB migration: `001_init_postgis.sql` + `002_derived_columns.sql`
+- ✅ DB migration: `001_init_postgis.sql` + `002_derived_columns.sql` + `003_api_management.sql`
+
+### API Gateway（新增）
+- ✅ API Key 認證 — `X-API-Key` header 或 `?api_key=` query param
+- ✅ Rate Limiting — sliding window 限流（預設 60 次/分鐘，per API Key）
+- ✅ 使用量追蹤 — in-memory 記錄 per-key/per-endpoint 請求統計
+- ✅ 統一錯誤處理 — `UTCError` hierarchy + 全域 exception handler
+- ✅ Response envelope — `{"data": ..., "meta": {"version", "generated_at"}}`
+- ✅ 集中式 Schema — 所有 Pydantic model 統一在 `src/api/schemas.py`
+- ✅ DB Session 管理 — 全域 engine + connection pool + `get_db()` FastAPI dependency
+- ✅ 前端 API client — auth header 注入 + 5xx exponential backoff retry
+
+#### Middleware 執行順序（內 → 外）
+```
+Request → APIKeyMiddleware → RateLimitMiddleware → CORSMiddleware → RequestLoggingMiddleware → Route Handler
+```
+
+#### 公開路徑（免認證）
+`/health`, `/docs`, `/openapi.json`, `/redoc`, `/assets/*`, 非 `/api/` 路徑
+
+#### API Key 方案
+| Plan | Rate Limit | 說明 |
+|------|-----------|------|
+| free | 60/min | 預設免費方案 |
+| pro | 300/min | 付費方案（預留） |
+| enterprise | 1000/min | 企業方案（預留） |
+| admin | 無限制 | `ADMIN_API_KEY` 管理員 |
 
 ### 平台功能
 - ✅ 全中文 UI
 - ✅ 響應式設計（桌面 + 行動裝置）
 - ✅ 系統監控頁面（DB / API 狀態）
-- ✅ 集中式 logging + request middleware
+- ✅ 集中式 logging + request middleware + 使用量追蹤
 - ✅ Vercel 部署設定（`vercel.json`）
 - ✅ 前端 Vitest 測試（8 files, 124 tests）
 
@@ -216,7 +260,7 @@ curl -X POST http://localhost:8000/api/v1/risk/batch \
 
 - [ ] **後端 pytest 測試套件** — 為所有 25 個 API endpoint 寫單元測試
 - [ ] **前端 E2E 測試** — Playwright 自動化測試關鍵用戶流程
-- [ ] **API 錯誤處理統一** — 標準 error response 格式 + 友善錯誤訊息
+- [x] **API 錯誤處理統一** — 標準 error response 格式 + 友善錯誤訊息（`src/api/errors.py`）
 - [ ] **效能優化** — 大量 grid cells 地圖渲染最佳化、API response caching (Redis)
 - [ ] **CI/CD** — GitHub Actions: lint → test → build → deploy to Vercel
 
@@ -250,9 +294,9 @@ curl -X POST http://localhost:8000/api/v1/risk/batch \
 - [ ] **用戶系統** — Supabase Auth（登入/註冊/角色管理）
 - [ ] **飛行計畫儲存** — 用戶可保存分析結果和路線規劃
 - [ ] **PDF 報告升級** — 包含圖表、地圖截圖、風險摘要
-- [ ] **API Key 管理** — 供第三方系統串接（付費方案用）
+- [x] **API Key 管理** — 供第三方系統串接（`src/api/auth.py` + `src/api/rate_limit.py`）
 - [ ] **多語系 i18n** — 中/英/日 切換（國際展示用）
-- [ ] **使用量追蹤** — 為未來計費做基礎
+- [x] **使用量追蹤** — in-memory 追蹤（`src/api/logging_config.py`），DB 表已預建（`003_api_management.sql`）
 - [ ] **即時風險推播** — WebSocket 通知高風險警報
 
 ### Phase 3D：部署與營運 (Deployment & Operations)
@@ -346,7 +390,12 @@ npm run dev
 
 - **前端開發**：所有 UI 文字使用中文
 - **API fallback**：當 DB 無法連線時，API 會返回 demo/mock 資料（見 `src/api/fallback.py`）
-- **地圖 token**：MapLibre GL 不需要 API key（使用開源 tile server）
+- **API 認證**：開發環境 `API_KEY_REQUIRED=false` 免認證；生產環境建議開啟，使用 `X-API-Key` header
+- **前端 API client**：`web/src/api/client.ts` 已內建 auth header 注入 + 5xx retry，設定 key 用 `setApiKey()`
+- **統一錯誤格式**：所有 API 錯誤回傳 `{"error": {"code": "...", "message": "...", "details": ...}}`
+- **新增 Schema**：所有 request/response model 集中在 `src/api/schemas.py`，新增端點請在此檔案定義
+- **DB Session**：route 中使用 `from src.db.session import get_engine, table_exists`，勿在 route 內自建 engine
+- **地圖 token**：MapLibre GL 不需要 API key（使用開源 tile server + glyphs）
 - **Git 分支**：feature branches 使用 `claude/` prefix
 - **Lint**：`cd web && npm run lint`
 - **Type check**：`cd web && npx tsc --noEmit`

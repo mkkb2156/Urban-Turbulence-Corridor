@@ -8,19 +8,11 @@ import random
 from datetime import datetime, timezone
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+
+from src.api.schemas import AreaPredictRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-
-class AreaPredictRequest(BaseModel):
-    """多邊形區域預測請求。"""
-    polygon: list[list[float]] = Field(..., description="多邊形頂點 [[lon,lat], ...]")
-    height: float = Field(50.0, ge=0, le=500, description="飛行高度 (m)")
-    drone_id: str | None = Field(None, description="無人機型號")
-    start_time: str | None = Field(None, description="起始時間 (ISO)")
-    end_time: str | None = Field(None, description="結束時間 (ISO)")
 
 
 def _polygon_center(polygon: list[list[float]]) -> tuple[float, float]:

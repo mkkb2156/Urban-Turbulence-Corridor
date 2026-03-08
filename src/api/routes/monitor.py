@@ -9,10 +9,9 @@ from datetime import datetime, timezone
 
 import requests as http_requests
 from fastapi import APIRouter
-from pydantic import BaseModel
 from sqlalchemy import text
 
-from config.settings import CWA_API_KEY, DATABASE_URL
+from config.settings import CWA_API_KEY
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -20,28 +19,16 @@ router = APIRouter()
 _VERSION = "0.1.0"
 
 
-class ServiceStatus(BaseModel):
-    name: str
-    status: str  # "up" | "down"
-    latency_ms: float
-    details: dict = {}
-    error: str | None = None
-
-
-class MonitorResponse(BaseModel):
-    status: str  # "healthy" | "degraded" | "unhealthy"
-    timestamp: str
-    version: str
-    services: list[ServiceStatus]
+from src.api.schemas import MonitorResponse, ServiceStatus
 
 
 def _check_database() -> ServiceStatus:
     """檢查 PostGIS 資料庫連線與資料量。"""
     start = time.perf_counter()
     try:
-        from sqlalchemy import create_engine
+        from src.db.session import get_engine
 
-        engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 5})
+        engine = get_engine()
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
             grid_count = conn.execute(text("SELECT COUNT(*) FROM grid_cells")).scalar() or 0

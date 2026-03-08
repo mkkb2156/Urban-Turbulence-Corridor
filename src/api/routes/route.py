@@ -8,27 +8,11 @@ import random
 from datetime import datetime, timezone
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+
+from src.api.schemas import RouteAnalyzeRequest, RoutePlanRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-
-class RouteAnalyzeRequest(BaseModel):
-    """路線風況分析請求。"""
-    waypoints: list[list[float]] = Field(..., description="路徑點 [[lon,lat], ...]")
-    height: float = Field(50.0, ge=0, le=500)
-    drone_id: str | None = None
-    time: str | None = None
-
-
-class RoutePlanRequest(BaseModel):
-    """最優路線規劃請求。"""
-    start: list[float] = Field(..., description="起點 [lon, lat]")
-    end: list[float] = Field(..., description="終點 [lon, lat]")
-    height: float = Field(50.0, ge=0, le=500)
-    drone_id: str | None = None
-    mode: str = Field("balanced", description="safest|shortest|balanced")
 
 
 def _haversine(lon1: float, lat1: float, lon2: float, lat2: float) -> float:

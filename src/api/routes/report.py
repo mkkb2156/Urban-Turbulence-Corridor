@@ -6,19 +6,10 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+
+from src.api.schemas import ReportRequest
 
 router = APIRouter()
-
-
-class ReportRequest(BaseModel):
-    """報告生成請求。"""
-    report_type: str = Field(..., description="area|route|plan")
-    title: str = Field("飛行任務報告", description="報告標題")
-    drone_id: str | None = None
-    height: float = Field(50.0)
-    data: dict = Field(default_factory=dict, description="分析結果數據")
-    format: str = Field("json", description="json|pdf")
 
 
 @router.post("/report/generate")
