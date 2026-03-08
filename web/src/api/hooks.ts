@@ -7,6 +7,7 @@ import type {
   DashboardStats,
   GridCell,
   Corridor,
+  CorridorComputeRequest,
   FAIData,
   WindRoseSector,
   TestResults,
@@ -22,6 +23,10 @@ import type {
   BatchRiskResponse,
   DerivedData,
   FlightWindowsResponse,
+  DronePowerRequest,
+  DronePowerResponse,
+  MissionFeasibilityRequest,
+  MissionFeasibilityResponse,
 } from './types';
 
 // ─── Query Keys ────────────────────────────────────────────────
@@ -92,6 +97,14 @@ export function useCorridors() {
     queryKey: queryKeys.corridors(),
     queryFn: () => apiClient.get<Corridor[]>('/corridors'),
     staleTime: 30 * 60 * 1000, // 30 minutes
+  });
+}
+
+// ─── Corridor Compute ─────────────────────────────────────────
+export function useCorridorCompute() {
+  return useMutation({
+    mutationFn: (req: CorridorComputeRequest) =>
+      apiClient.post<Corridor[]>('/corridors/compute', req),
   });
 }
 
@@ -223,6 +236,22 @@ export function useFlightWindows(params: {
     queryFn: () => apiClient.get<FlightWindowsResponse>('/forecast/flight-windows', params),
     enabled: enabled && params.lon != null && params.lat != null,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ─── Drone Power ─────────────────────────────────────────────
+export function useDronePower() {
+  return useMutation({
+    mutationFn: (req: DronePowerRequest) =>
+      apiClient.post<DronePowerResponse>('/drone/power', req),
+  });
+}
+
+// ─── Mission Feasibility ─────────────────────────────────────
+export function useMissionFeasibility() {
+  return useMutation({
+    mutationFn: (req: MissionFeasibilityRequest) =>
+      apiClient.post<MissionFeasibilityResponse>('/drone/mission', req),
   });
 }
 

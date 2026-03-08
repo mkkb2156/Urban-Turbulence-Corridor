@@ -64,6 +64,72 @@ class CorridorResponse(BaseModel):
     mean_wind_speed: float
     dominant_direction: str
     risk_level: str
+    wind_direction_deg: float | None = None
+
+
+class CorridorComputeRequest(BaseModel):
+    """即時風廊計算請求。"""
+
+    city: str = Field("taipei", description="城市名稱")
+    wind_direction: float = Field(45.0, ge=0, lt=360, description="風向角度（氣象慣例 0=N, 90=E）")
+    n_corridors: int = Field(5, ge=1, le=20, description="最大風廊數量")
+    fai_col: str | None = Field(None, description="FAI 欄位名稱，None 時自動選擇")
+    multi_direction: bool = Field(False, description="是否同時計算多方向風廊")
+
+
+# ─── Drone Power ──────────────────────────────────────────────
+
+
+class DronePowerRequest(BaseModel):
+    """無人機功率計算請求。"""
+
+    drone_id: str = Field(..., description="無人機型號 ID")
+    wind_speed: float = Field(0.0, ge=0, le=30, description="風速 (m/s)")
+    wind_angle: float = Field(0.0, ge=0, lt=360, description="風相對於飛行方向角度（0=逆風, 180=順風）")
+    cruise_speed: float | None = Field(None, ge=0, le=30, description="巡航速度 (m/s)，None 使用預設")
+    altitude: float = Field(50.0, ge=0, le=500, description="飛行高度 (m)")
+
+
+class DronePowerResponse(BaseModel):
+    """無人機功率計算回應。"""
+
+    drone_id: str
+    drone_name: str
+    hover_power_w: float
+    forward_power_w: float
+    groundspeed_ms: float
+    endurance_min: float
+    range_km: float
+    battery_impact_pct: float
+    headwind_ms: float
+    crosswind_ms: float
+    battery_capacity_wh: float
+    generated_at: str
+
+
+class MissionFeasibilityRequest(BaseModel):
+    """路線任務可行性請求。"""
+
+    drone_id: str = Field(..., description="無人機型號 ID")
+    waypoints: list[list[float]] = Field(..., description="路徑點 [[lon,lat], ...]")
+    height: float = Field(50.0, ge=0, le=500, description="飛行高度 (m)")
+    reserve_pct: float = Field(20.0, ge=0, le=50, description="電池預留百分比")
+
+
+class MissionFeasibilityResponse(BaseModel):
+    """路線任務可行性回應。"""
+
+    drone_id: str
+    drone_name: str
+    feasible: bool
+    total_energy_wh: float
+    battery_capacity_wh: float
+    battery_remaining_pct: float
+    total_time_min: float
+    critical_segments: int
+    recommended_speed_ms: float
+    segments_detail: list[dict]
+    generated_at: str
 
 
 # ─── Risk ──────────────────────────────────────────────────────
@@ -143,6 +209,8 @@ class GridCellResponse(BaseModel):
     turbulence: float | None = None
     gust_factor: float | None = None
     shelter_index: float | None = None
+    lcz_class: int | None = None
+    lcz_label: str | None = None
 
 
 class WindRoseSectorResponse(BaseModel):

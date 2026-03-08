@@ -12,7 +12,7 @@ from src.api.auth import APIKeyMiddleware
 from src.api.errors import UTCError, utc_error_handler
 from src.api.logging_config import RequestLoggingMiddleware, setup_logging
 from src.api.rate_limit import RateLimitMiddleware
-from src.api.routes import area, corridor, dashboard, derived, forecast, monitor, report, risk, route, tests, wind, wind_regional
+from src.api.routes import area, corridor, dashboard, derived, drone_power, forecast, monitor, report, risk, route, tests, wind, wind_regional
 from src.api.schemas import HealthResponse
 
 # 初始化日誌
@@ -65,6 +65,7 @@ app.include_router(derived.router, prefix="/api/v1", tags=["Derived Data"])
 app.include_router(area.router, prefix="/api/v1", tags=["Analysis"])
 app.include_router(route.router, prefix="/api/v1", tags=["Route"])
 app.include_router(report.router, prefix="/api/v1", tags=["Report"])
+app.include_router(drone_power.router, prefix="/api/v1", tags=["Drone Power"])
 app.include_router(monitor.router, prefix="/api/v1", tags=["System"])
 app.include_router(tests.router, prefix="/api/v1", tags=["System"])
 

@@ -55,6 +55,8 @@ export interface GridCell {
   turbulence?: number | null;
   gust_factor?: number | null;
   shelter_index?: number | null;
+  lcz_class?: number | null;
+  lcz_label?: string | null;
 }
 
 // ─── Corridor ──────────────────────────────────────────────────
@@ -68,6 +70,15 @@ export interface Corridor {
   mean_wind_speed: number;
   dominant_direction: string;
   risk_level: RiskLevel;
+  wind_direction_deg?: number | null;
+}
+
+export interface CorridorComputeRequest {
+  city?: string;
+  wind_direction: number;
+  n_corridors?: number;
+  fai_col?: string | null;
+  multi_direction?: boolean;
 }
 
 // ─── FAI Data ──────────────────────────────────────────────────
@@ -359,6 +370,61 @@ export interface RegionalWindResponse {
   points: RegionalWindPoint[];
   point_count: number;
   source: 'open-meteo' | 'mock';
+  generated_at: string;
+}
+
+// ─── Drone Power ──────────────────────────────────────────────
+export interface DronePowerRequest {
+  drone_id: string;
+  wind_speed: number;
+  wind_angle?: number;
+  cruise_speed?: number | null;
+  altitude?: number;
+}
+
+export interface DronePowerResponse {
+  drone_id: string;
+  drone_name: string;
+  hover_power_w: number;
+  forward_power_w: number;
+  groundspeed_ms: number;
+  endurance_min: number;
+  range_km: number;
+  battery_impact_pct: number;
+  headwind_ms: number;
+  crosswind_ms: number;
+  battery_capacity_wh: number;
+  generated_at: string;
+}
+
+export interface MissionFeasibilityRequest {
+  drone_id: string;
+  waypoints: [number, number][];
+  height?: number;
+  reserve_pct?: number;
+}
+
+export interface MissionFeasibilityResponse {
+  drone_id: string;
+  drone_name: string;
+  feasible: boolean;
+  total_energy_wh: number;
+  battery_capacity_wh: number;
+  battery_remaining_pct: number;
+  total_time_min: number;
+  critical_segments: number;
+  recommended_speed_ms: number;
+  segments_detail: {
+    distance_m: number;
+    bearing: number;
+    wind_speed: number;
+    power_w: number;
+    groundspeed_ms: number;
+    travel_time_s: number;
+    energy_wh: number;
+    battery_impact_pct: number;
+    is_critical: boolean;
+  }[];
   generated_at: string;
 }
 

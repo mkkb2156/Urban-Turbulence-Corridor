@@ -106,9 +106,45 @@ TAIPEI_PILOT = CityConfig(
     },
 )
 
+# 高雄設定
+KAOHSIUNG = CityConfig(
+    name="kaohsiung",
+    bounds_4326=(120.250, 22.550, 120.400, 22.700),
+    wind_source_points_desc=["高雄港（西南）", "壽山（西北）", "鳳山丘陵（東）"],
+    primary_wind_directions={
+        "southwest": (202.5, 225.0),  # 夏季西南季風
+        "north": (0.0, 22.5),  # 冬季北風
+    },
+)
+
+# 台中設定
+TAICHUNG = CityConfig(
+    name="taichung",
+    bounds_4326=(120.600, 24.100, 120.750, 24.200),
+    wind_source_points_desc=["大肚台地（西）", "太平丘陵（東）"],
+    primary_wind_directions={
+        "northeast": (22.5, 45.0),
+        "southwest": (202.5, 225.0),
+    },
+)
+
+# 新竹設定
+HSINCHU = CityConfig(
+    name="hsinchu",
+    bounds_4326=(120.930, 24.770, 121.030, 24.830),
+    wind_source_points_desc=["新竹平原（西北）", "竹東丘陵（東南）"],
+    primary_wind_directions={
+        "northeast": (22.5, 45.0),  # 新竹以東北風著稱
+        "north": (0.0, 22.5),
+    },
+)
+
 CITY_CONFIGS: dict[str, CityConfig] = {
     "taipei": TAIPEI,
     "taipei_pilot": TAIPEI_PILOT,
+    "kaohsiung": KAOHSIUNG,
+    "taichung": TAICHUNG,
+    "hsinchu": HSINCHU,
 }
 
 
