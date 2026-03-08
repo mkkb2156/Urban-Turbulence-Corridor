@@ -14,15 +14,13 @@ interface ContourLayerProps {
   colorMode: MapColorMode;
   /** Number of contour levels to generate */
   levels?: number;
-  /** Show filled isobands instead of just lines */
-  showFill?: boolean;
 }
 
+const HEATMAP_SOURCE = 'contour-heatmap';
+const HEATMAP_LAYER = 'contour-heatmap-layer';
 const CONTOUR_LINE_SOURCE = 'contour-lines';
 const CONTOUR_LINE_LAYER = 'contour-lines-layer';
 const CONTOUR_LABEL_LAYER = 'contour-labels-layer';
-const INTERPOLATED_SOURCE = 'interpolated-field';
-const INTERPOLATED_LAYER = 'interpolated-field-layer';
 
 function getCellValue(cell: GridCell, mode: MapColorMode): number | null {
   switch (mode) {
@@ -40,9 +38,6 @@ function getCellValue(cell: GridCell, mode: MapColorMode): number | null {
   }
 }
 
-/**
- * Generate contour break values for a given color mode.
- */
 function generateBreaks(mode: MapColorMode, levels: number): number[] {
   const range = COLOR_MODE_RANGES[mode];
   const breaks: number[] = [];
@@ -53,26 +48,96 @@ function generateBreaks(mode: MapColorMode, levels: number): number[] {
   return breaks;
 }
 
+/**
+ * Heatmap color ramp per color mode.
+ * MapLibre heatmap-color uses density 0..1.
+ */
+function getHeatmapColorExpr(mode: MapColorMode): maplibregl.ExpressionSpecification {
+  switch (mode) {
+    case 'wind_speed':
+      return [
+        'interpolate', ['linear'], ['heatmap-density'],
+        0, 'rgba(0,0,0,0)',
+        0.1, 'rgba(96,165,250,0.4)',
+        0.3, 'rgba(52,211,153,0.5)',
+        0.5, 'rgba(251,191,36,0.5)',
+        0.7, 'rgba(248,113,113,0.5)',
+        1.0, 'rgba(153,27,27,0.6)',
+      ];
+    case 'turbulence':
+      return [
+        'interpolate', ['linear'], ['heatmap-density'],
+        0, 'rgba(0,0,0,0)',
+        0.2, 'rgba(147,197,253,0.3)',
+        0.4, 'rgba(110,231,183,0.4)',
+        0.6, 'rgba(251,191,36,0.5)',
+        0.8, 'rgba(248,113,113,0.5)',
+        1.0, 'rgba(127,29,29,0.6)',
+      ];
+    case 'gust_factor':
+      return [
+        'interpolate', ['linear'], ['heatmap-density'],
+        0, 'rgba(0,0,0,0)',
+        0.2, 'rgba(147,197,253,0.3)',
+        0.5, 'rgba(251,191,36,0.4)',
+        0.8, 'rgba(248,113,113,0.5)',
+        1.0, 'rgba(127,29,29,0.6)',
+      ];
+    case 'shelter':
+      return [
+        'interpolate', ['linear'], ['heatmap-density'],
+        0, 'rgba(0,0,0,0)',
+        0.2, 'rgba(110,231,183,0.3)',
+        0.5, 'rgba(251,191,36,0.4)',
+        0.8, 'rgba(239,68,68,0.5)',
+        1.0, 'rgba(127,29,29,0.6)',
+      ];
+    case 'risk':
+    default:
+      return [
+        'interpolate', ['linear'], ['heatmap-density'],
+        0, 'rgba(0,0,0,0)',
+        0.15, 'rgba(46,204,113,0.3)',
+        0.35, 'rgba(241,196,15,0.4)',
+        0.6, 'rgba(231,76,60,0.5)',
+        0.85, 'rgba(44,62,80,0.6)',
+        1.0, 'rgba(30,30,30,0.7)',
+      ];
+  }
+}
+
 export default function ContourLayer({
   map,
   gridCells,
   visible,
   colorMode,
-  levels = 8,
-  showFill = true,
+  levels = 5,
 }: ContourLayerProps) {
   const addedRef = useRef(false);
 
-  // Compute interpolated grid and contour lines
-  const { contourGeoJSON, interpolatedGeoJSON } = useMemo(() => {
-    if (!gridCells?.length) {
-      return {
-        contourGeoJSON: { type: 'FeatureCollection' as const, features: [] },
-        interpolatedGeoJSON: { type: 'FeatureCollection' as const, features: [] },
-      };
-    }
+  // Build point GeoJSON for heatmap from grid cells
+  const heatmapGeoJSON = useMemo<GeoJSON.FeatureCollection>(() => {
+    if (!gridCells?.length) return { type: 'FeatureCollection', features: [] };
 
-    // Build point features with values
+    const range = COLOR_MODE_RANGES[colorMode];
+    const features: GeoJSON.Feature[] = [];
+    for (const cell of gridCells) {
+      const value = getCellValue(cell, colorMode);
+      if (value == null) continue;
+      const weight = Math.max(0, Math.min(1, (value - range.min) / (range.max - range.min)));
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [cell.lon, cell.lat] },
+        properties: { value, weight },
+      });
+    }
+    return { type: 'FeatureCollection', features };
+  }, [gridCells, colorMode]);
+
+  // Compute contour isolines
+  const contourGeoJSON = useMemo<GeoJSON.FeatureCollection>(() => {
+    if (!gridCells?.length) return { type: 'FeatureCollection', features: [] };
+
     const points = gridCells
       .map((cell) => {
         const value = getCellValue(cell, colorMode);
@@ -81,39 +146,20 @@ export default function ContourLayer({
       })
       .filter((p): p is NonNullable<typeof p> => p !== null);
 
-    if (points.length < 3) {
-      return {
-        contourGeoJSON: { type: 'FeatureCollection' as const, features: [] },
-        interpolatedGeoJSON: { type: 'FeatureCollection' as const, features: [] },
-      };
-    }
+    if (points.length < 3) return { type: 'FeatureCollection', features: [] };
 
     const pointCollection = featureCollection(points);
 
-    // IDW interpolation to create a denser point grid
-    const interpolated = interpolate(pointCollection, 0.3, {
+    // Coarser grid (1.0 km) to avoid excessive points
+    const interpolated = interpolate(pointCollection, 1.0, {
       gridType: 'point' as const,
       property: 'value',
       weight: 2,
     });
 
-    // Color each interpolated point
-    for (const feature of interpolated.features) {
-      const val = feature.properties?.value;
-      if (val != null) {
-        feature.properties = {
-          ...feature.properties,
-          color: colorForValue(colorMode, val),
-        };
-      }
-    }
-
-    // Generate contour lines (isolines)
     const breaks = generateBreaks(colorMode, levels);
-    let contours: GeoJSON.FeatureCollection;
     try {
-      contours = isolines(interpolated, breaks, { zProperty: 'value' });
-      // Add color to each contour line
+      const contours = isolines(interpolated, breaks, { zProperty: 'value' });
       for (const feature of contours.features) {
         const val = feature.properties?.value;
         if (val != null) {
@@ -124,14 +170,10 @@ export default function ContourLayer({
           };
         }
       }
+      return contours;
     } catch {
-      contours = { type: 'FeatureCollection', features: [] };
+      return { type: 'FeatureCollection', features: [] };
     }
-
-    return {
-      contourGeoJSON: contours,
-      interpolatedGeoJSON: interpolated,
-    };
   }, [gridCells, colorMode, levels]);
 
   // Add/update sources and layers
@@ -139,47 +181,54 @@ export default function ContourLayer({
     if (!map || !map.isStyleLoaded()) return;
 
     const addSourcesAndLayers = () => {
-      // Interpolated field (filled circles for smooth heatmap effect)
-      if (!map.getSource(INTERPOLATED_SOURCE)) {
-        map.addSource(INTERPOLATED_SOURCE, {
+      // ── Heatmap (replaces broken blurred circles) ──
+      if (!map.getSource(HEATMAP_SOURCE)) {
+        map.addSource(HEATMAP_SOURCE, {
           type: 'geojson',
-          data: interpolatedGeoJSON,
+          data: heatmapGeoJSON,
         });
       } else {
-        (map.getSource(INTERPOLATED_SOURCE) as maplibregl.GeoJSONSource).setData(
-          interpolatedGeoJSON as GeoJSON.FeatureCollection,
-        );
+        (map.getSource(HEATMAP_SOURCE) as maplibregl.GeoJSONSource).setData(heatmapGeoJSON);
       }
 
-      if (!map.getLayer(INTERPOLATED_LAYER)) {
+      if (!map.getLayer(HEATMAP_LAYER)) {
         map.addLayer({
-          id: INTERPOLATED_LAYER,
-          type: 'circle',
-          source: INTERPOLATED_SOURCE,
+          id: HEATMAP_LAYER,
+          type: 'heatmap',
+          source: HEATMAP_SOURCE,
           paint: {
-            'circle-radius': [
+            'heatmap-weight': ['get', 'weight'],
+            'heatmap-radius': [
               'interpolate', ['linear'], ['zoom'],
-              11, 8,
-              13, 14,
-              15, 22,
+              10, 20,
+              12, 30,
+              14, 40,
             ],
-            'circle-color': ['get', 'color'],
-            'circle-opacity': showFill ? 0.4 : 0,
-            'circle-blur': 0.8,
+            'heatmap-intensity': [
+              'interpolate', ['linear'], ['zoom'],
+              10, 0.6,
+              14, 1.0,
+            ],
+            'heatmap-color': getHeatmapColorExpr(colorMode),
+            // Fade out at high zoom to reveal grid cells
+            'heatmap-opacity': [
+              'interpolate', ['linear'], ['zoom'],
+              12, 0.7,
+              14, 0.4,
+              16, 0.1,
+            ],
           },
         });
       }
 
-      // Contour lines
+      // ── Contour isolines ──
       if (!map.getSource(CONTOUR_LINE_SOURCE)) {
         map.addSource(CONTOUR_LINE_SOURCE, {
           type: 'geojson',
           data: contourGeoJSON,
         });
       } else {
-        (map.getSource(CONTOUR_LINE_SOURCE) as maplibregl.GeoJSONSource).setData(
-          contourGeoJSON as GeoJSON.FeatureCollection,
-        );
+        (map.getSource(CONTOUR_LINE_SOURCE) as maplibregl.GeoJSONSource).setData(contourGeoJSON);
       }
 
       if (!map.getLayer(CONTOUR_LINE_LAYER)) {
@@ -190,7 +239,7 @@ export default function ContourLayer({
           paint: {
             'line-color': ['get', 'color'],
             'line-width': 1.5,
-            'line-opacity': 0.7,
+            'line-opacity': 0.6,
           },
           layout: {
             'line-cap': 'round',
@@ -199,7 +248,6 @@ export default function ContourLayer({
         });
       }
 
-      // Contour labels
       if (!map.getLayer(CONTOUR_LABEL_LAYER)) {
         map.addLayer({
           id: CONTOUR_LABEL_LAYER,
@@ -232,27 +280,30 @@ export default function ContourLayer({
 
     return () => {
       if (!addedRef.current) return;
-      // Cleanup layers and sources on unmount
-      for (const layerId of [CONTOUR_LABEL_LAYER, CONTOUR_LINE_LAYER, INTERPOLATED_LAYER]) {
-        if (map.getLayer(layerId)) {
-          map.removeLayer(layerId);
-        }
+      for (const layerId of [CONTOUR_LABEL_LAYER, CONTOUR_LINE_LAYER, HEATMAP_LAYER]) {
+        if (map.getLayer(layerId)) map.removeLayer(layerId);
       }
-      for (const sourceId of [CONTOUR_LINE_SOURCE, INTERPOLATED_SOURCE]) {
-        if (map.getSource(sourceId)) {
-          map.removeSource(sourceId);
-        }
+      for (const sourceId of [CONTOUR_LINE_SOURCE, HEATMAP_SOURCE]) {
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
       }
       addedRef.current = false;
     };
-  }, [map, contourGeoJSON, interpolatedGeoJSON, showFill]);
+  }, [map, heatmapGeoJSON, contourGeoJSON, colorMode]);
+
+  // Update heatmap color ramp when colorMode changes
+  useEffect(() => {
+    if (!map || !addedRef.current) return;
+    if (map.getLayer(HEATMAP_LAYER)) {
+      map.setPaintProperty(HEATMAP_LAYER, 'heatmap-color', getHeatmapColorExpr(colorMode));
+    }
+  }, [map, colorMode]);
 
   // Toggle visibility
   useEffect(() => {
     if (!map || !addedRef.current) return;
 
     const visibility = visible ? 'visible' : 'none';
-    for (const layerId of [CONTOUR_LINE_LAYER, CONTOUR_LABEL_LAYER, INTERPOLATED_LAYER]) {
+    for (const layerId of [HEATMAP_LAYER, CONTOUR_LINE_LAYER, CONTOUR_LABEL_LAYER]) {
       if (map.getLayer(layerId)) {
         map.setLayoutProperty(layerId, 'visibility', visibility);
       }

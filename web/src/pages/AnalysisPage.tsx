@@ -42,6 +42,7 @@ export default function AnalysisPage() {
   const [areaResult, setAreaResult] = useState<AreaPredictResponse | null>(null);
   const [routeResult, setRouteResult] = useState<RouteAnalyzeResponse | null>(null);
   const [planResult, setPlanResult] = useState<RoutePlanResponse | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   // Initialize map
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function AnalysisPage() {
       container: containerRef.current,
       style: {
         version: 8,
+        glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
         sources: {
           'osm-tiles': {
             type: 'raster',
@@ -234,87 +236,97 @@ export default function AnalysisPage() {
 
   // Submit analysis
   const handleAnalyze = useCallback(async () => {
-    if (tab === 'area' && drawnPoints.length >= 3) {
-      const result = await areaMutation.mutateAsync({
-        polygon: drawnPoints,
-        height: selectedHeight,
-        drone_id: selectedDrone?.id,
-      });
-      setAreaResult(result);
+    setAnalysisError(null);
 
-      // Show result cells on map
-      const map = mapRef.current;
-      if (map && map.isStyleLoaded()) {
-        const src = map.getSource('result-cells') as maplibregl.GeoJSONSource | undefined;
-        if (src && result.grid_cells) {
-          const features: GeoJSON.Feature[] = result.grid_cells.map((c) => ({
-            type: 'Feature' as const,
-            geometry: {
-              type: 'Polygon' as const,
-              coordinates: [[
-                [c.lon - 0.0025, c.lat - 0.0025],
-                [c.lon + 0.0025, c.lat - 0.0025],
-                [c.lon + 0.0025, c.lat + 0.0025],
-                [c.lon - 0.0025, c.lat + 0.0025],
-                [c.lon - 0.0025, c.lat - 0.0025],
-              ]],
-            },
-            properties: { color: RISK_COLORS[c.risk_level as RiskLevel] },
-          }));
-          src.setData({ type: 'FeatureCollection', features });
+    try {
+      if (tab === 'area' && drawnPoints.length >= 3) {
+        const result = await areaMutation.mutateAsync({
+          polygon: drawnPoints,
+          height: selectedHeight,
+          drone_id: selectedDrone?.id,
+        });
+        setAreaResult(result);
+
+        // Show result cells on map
+        const map = mapRef.current;
+        if (map && map.isStyleLoaded()) {
+          const src = map.getSource('result-cells') as maplibregl.GeoJSONSource | undefined;
+          if (src && result.grid_cells) {
+            const features: GeoJSON.Feature[] = result.grid_cells.map((c) => ({
+              type: 'Feature' as const,
+              geometry: {
+                type: 'Polygon' as const,
+                coordinates: [[
+                  [c.lon - 0.0025, c.lat - 0.0025],
+                  [c.lon + 0.0025, c.lat - 0.0025],
+                  [c.lon + 0.0025, c.lat + 0.0025],
+                  [c.lon - 0.0025, c.lat + 0.0025],
+                  [c.lon - 0.0025, c.lat - 0.0025],
+                ]],
+              },
+              properties: { color: RISK_COLORS[c.risk_level as RiskLevel] },
+            }));
+            src.setData({ type: 'FeatureCollection', features });
+          }
         }
-      }
-    } else if (tab === 'route' && drawnPoints.length >= 2) {
-      const result = await routeMutation.mutateAsync({
-        waypoints: drawnPoints,
-        height: selectedHeight,
-        drone_id: selectedDrone?.id,
-      });
-      setRouteResult(result);
+      } else if (tab === 'route' && drawnPoints.length >= 2) {
+        const result = await routeMutation.mutateAsync({
+          waypoints: drawnPoints,
+          height: selectedHeight,
+          drone_id: selectedDrone?.id,
+        });
+        setRouteResult(result);
 
-      // Show colored route segments
-      const map = mapRef.current;
-      if (map && map.isStyleLoaded()) {
-        const src = map.getSource('route-analysis') as maplibregl.GeoJSONSource | undefined;
-        if (src) {
-          const features: GeoJSON.Feature[] = result.segments.map((seg) => ({
-            type: 'Feature' as const,
-            geometry: {
-              type: 'LineString' as const,
-              coordinates: seg.sample_points.map((p) => [p.lon, p.lat]),
-            },
-            properties: { color: RISK_COLORS[seg.risk_level as RiskLevel] },
-          }));
-          src.setData({ type: 'FeatureCollection', features });
-        }
-      }
-    } else if (tab === 'plan' && drawnPoints.length >= 2) {
-      const result = await planMutation.mutateAsync({
-        start: drawnPoints[0],
-        end: drawnPoints[drawnPoints.length - 1],
-        height: selectedHeight,
-        drone_id: selectedDrone?.id,
-        mode: 'balanced',
-      });
-      setPlanResult(result);
-
-      // Show 3 routes on map
-      const map = mapRef.current;
-      if (map && map.isStyleLoaded()) {
-        for (const route of result.routes) {
-          const src = map.getSource(`route-${route.mode}`) as maplibregl.GeoJSONSource | undefined;
+        // Show colored route segments on map
+        const map = mapRef.current;
+        if (map && map.isStyleLoaded() && result.segments?.length) {
+          const src = map.getSource('route-analysis') as maplibregl.GeoJSONSource | undefined;
           if (src) {
-            src.setData({
-              type: 'FeatureCollection',
-              features: [{
-                type: 'Feature',
-                geometry: route.geometry,
-                properties: {},
-              }],
-            });
+            const features: GeoJSON.Feature[] = result.segments
+              .filter((seg) => seg.sample_points?.length >= 2)
+              .map((seg) => ({
+                type: 'Feature' as const,
+                geometry: {
+                  type: 'LineString' as const,
+                  coordinates: seg.sample_points.map((p) => [p.lon, p.lat]),
+                },
+                properties: { color: RISK_COLORS[seg.risk_level as RiskLevel] },
+              }));
+            src.setData({ type: 'FeatureCollection', features });
+          }
+        }
+      } else if (tab === 'plan' && drawnPoints.length >= 2) {
+        const result = await planMutation.mutateAsync({
+          start: drawnPoints[0],
+          end: drawnPoints[drawnPoints.length - 1],
+          height: selectedHeight,
+          drone_id: selectedDrone?.id,
+          mode: 'balanced',
+        });
+        setPlanResult(result);
+
+        // Show 3 routes on map
+        const map = mapRef.current;
+        if (map && map.isStyleLoaded()) {
+          for (const route of result.routes) {
+            const src = map.getSource(`route-${route.mode}`) as maplibregl.GeoJSONSource | undefined;
+            if (src) {
+              src.setData({
+                type: 'FeatureCollection',
+                features: [{
+                  type: 'Feature',
+                  geometry: route.geometry,
+                  properties: {},
+                }],
+              });
+            }
           }
         }
       }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '分析失敗，請稍後再試';
+      setAnalysisError(message);
+      console.error('Analysis failed:', err);
     }
   }, [tab, drawnPoints, selectedHeight, selectedDrone, areaMutation, routeMutation, planMutation]);
 
@@ -357,7 +369,14 @@ export default function AnalysisPage() {
           {tabs.map((t) => (
             <button
               key={t.id}
-              onClick={() => { setTab(t.id); clearDrawing(); }}
+              onClick={() => {
+                setTab(t.id);
+                clearDrawing();
+                setAnalysisError(null);
+                // Auto-set draw mode for selected tab
+                const modeMap: Record<AnalysisTab, DrawMode> = { area: 'polygon', route: 'route', plan: 'point' };
+                setDrawMode(modeMap[t.id]);
+              }}
               className={clsx(
                 'flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-medium transition-colors',
                 tab === t.id ? 'bg-white text-blue-600 shadow dark:bg-gray-700 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700',
@@ -408,6 +427,13 @@ export default function AnalysisPage() {
           {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />}
           {tab === 'area' ? '分析區域' : tab === 'route' ? '分析路線' : '規劃路線'}
         </button>
+
+        {/* Error display */}
+        {analysisError && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+            {analysisError}
+          </div>
+        )}
 
         {/* Results panel */}
         {areaResult && tab === 'area' && (

@@ -11,10 +11,10 @@ interface WindParticleLayerProps {
 }
 
 // ─── Particle system configuration ─────────────────────────────
-const MAX_PARTICLES = 3000;
-const PARTICLE_LIFETIME = 100; // frames
-const SPEED_FACTOR = 0.00004; // lon/lat units per m/s per frame
-const FADE_TAIL = 0.93; // trail opacity decay
+const MAX_PARTICLES = 800;
+const PARTICLE_LIFETIME = 60; // frames
+const SPEED_FACTOR = 0.00003; // lon/lat units per m/s per frame
+const FADE_TAIL = 0.88; // trail opacity decay
 
 // ─── Wind speed color scale (chroma.js Lab space) ──────────────
 const particleColorScale = chroma
@@ -248,9 +248,9 @@ export default function WindParticleLayer({ map, gridCells, visible }: WindParti
         ctx.beginPath();
         ctx.moveTo(from.x, from.y);
         ctx.lineTo(to.x, to.y);
-        ctx.strokeStyle = windSpeedColorRGBA(p.speed, 0.8 * opacity);
-        // Line width scales with speed: min 0.8px (calm) → max 2.5px (strong)
-        ctx.lineWidth = Math.max(0.8, Math.min(2.5, p.speed / 5));
+        ctx.strokeStyle = windSpeedColorRGBA(p.speed, 0.5 * opacity);
+        // Line width scales with speed: min 0.5px (calm) → max 1.5px (strong)
+        ctx.lineWidth = Math.max(0.5, Math.min(1.5, p.speed / 6));
         ctx.stroke();
       }
 
