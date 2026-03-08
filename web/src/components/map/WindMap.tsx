@@ -1,7 +1,15 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import type { GridCell, Corridor, MapLayers, HeightOption } from '../../api/types';
-import { RISK_COLORS, CORRIDOR_COLORS } from '../../utils/colors';
+import {
+  RISK_COLORS,
+  CORRIDOR_COLORS,
+  turbulenceColor,
+  gustFactorColor,
+  shelterColor,
+  windSpeedColor,
+} from '../../utils/colors';
+import type { MapColorMode } from '../../utils/colors';
 import { DEFAULT_CENTER, DEFAULT_ZOOM, gridCellPolygon } from '../../utils/geo';
 import MapControls from './MapControls';
 import RiskLegend from './RiskLegend';
@@ -17,6 +25,24 @@ interface WindMapProps {
   layers: MapLayers;
   onLayersChange: (layers: MapLayers) => void;
   isLoading?: boolean;
+  colorMode?: MapColorMode;
+  onColorModeChange?: (mode: MapColorMode) => void;
+}
+
+function getCellColor(cell: GridCell, mode: MapColorMode): string {
+  switch (mode) {
+    case 'turbulence':
+      return cell.turbulence != null ? turbulenceColor(cell.turbulence) : '#cccccc';
+    case 'gust_factor':
+      return cell.gust_factor != null ? gustFactorColor(cell.gust_factor) : '#cccccc';
+    case 'shelter':
+      return cell.shelter_index != null ? shelterColor(cell.shelter_index) : '#cccccc';
+    case 'wind_speed':
+      return windSpeedColor(cell.wind_speed);
+    case 'risk':
+    default:
+      return RISK_COLORS[cell.risk_level];
+  }
 }
 
 export default function WindMap({
@@ -27,6 +53,8 @@ export default function WindMap({
   layers,
   onLayersChange,
   isLoading,
+  colorMode = 'risk',
+  onColorModeChange,
 }: WindMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -198,6 +226,9 @@ export default function WindMap({
           wind_speed: props.wind_speed as number,
           wind_direction: props.wind_direction as string,
           is_corridor: props.is_corridor as boolean,
+          turbulence: props.turbulence != null ? Number(props.turbulence) : null,
+          gust_factor: props.gust_factor != null ? Number(props.gust_factor) : null,
+          shelter_index: props.shelter_index != null ? Number(props.shelter_index) : null,
         });
         setPopupPosition({ x: e.point.x, y: e.point.y });
       }
@@ -240,7 +271,7 @@ export default function WindMap({
       },
       properties: {
         ...cell,
-        color: RISK_COLORS[cell.risk_level],
+        color: getCellColor(cell, colorMode),
       },
     }));
 
@@ -248,7 +279,7 @@ export default function WindMap({
       type: 'FeatureCollection',
       features,
     });
-  }, [gridCells, layers.risk]);
+  }, [gridCells, layers.risk, colorMode]);
 
   // Update corridors data
   useEffect(() => {
@@ -328,6 +359,8 @@ export default function WindMap({
           onHeightChange={onHeightChange}
           layers={layers}
           onLayersChange={onLayersChange}
+          colorMode={colorMode}
+          onColorModeChange={onColorModeChange}
         />
       </div>
 
@@ -347,7 +380,7 @@ export default function WindMap({
 
       {/* Risk legend */}
       <div className="absolute bottom-8 left-3 z-10">
-        <RiskLegend />
+        <RiskLegend colorMode={colorMode} />
       </div>
 
       {/* Grid popup */}

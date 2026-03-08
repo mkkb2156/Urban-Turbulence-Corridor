@@ -491,10 +491,10 @@ export default function AnalysisPage() {
               </div>
             </div>
             {/* Segments table */}
-            <div className="max-h-40 overflow-y-auto">
+            <div className="max-h-48 overflow-y-auto">
               <table className="w-full text-xs">
                 <thead className="text-gray-400">
-                  <tr><th className="text-left">段</th><th>風速</th><th>逆風</th><th>風險</th></tr>
+                  <tr><th className="text-left">段</th><th>風速</th><th>逆風</th><th>側風</th><th>風效</th><th>風險</th></tr>
                 </thead>
                 <tbody>
                   {routeResult.segments.map((seg, i) => (
@@ -502,6 +502,8 @@ export default function AnalysisPage() {
                       <td className="py-1">{i + 1}</td>
                       <td className="text-center">{seg.avg_wind_speed} m/s</td>
                       <td className="text-center">{seg.headwind > 0 ? '+' : ''}{seg.headwind} m/s</td>
+                      <td className="text-center">{Math.abs(seg.crosswind).toFixed(1)} m/s</td>
+                      <td className="text-center">{seg.wind_effect_pct > 0 ? '+' : ''}{seg.wind_effect_pct}%</td>
                       <td className="text-center">
                         <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: RISK_COLORS[seg.risk_level as RiskLevel] }} />
                       </td>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plane, Navigation, Wind } from 'lucide-react';
 import type { HeightOption, MapLayers } from '../api/types';
 import { DEFAULT_MAP_LAYERS } from '../api/types';
+import type { MapColorMode } from '../utils/colors';
 import { useDashboardStats, useGridCells, useCorridors, useWindRose } from '../api/hooks';
 import WindMap from '../components/map/WindMap';
 import StatsCards from '../components/dashboard/StatsCards';
@@ -13,6 +14,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [height, setHeight] = useState<HeightOption>(50);
   const [layers, setLayers] = useState<MapLayers>(DEFAULT_MAP_LAYERS);
+  const [colorMode, setColorMode] = useState<MapColorMode>('risk');
 
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: gridCells, isLoading: gridsLoading } = useGridCells(height);
@@ -101,6 +103,8 @@ export default function DashboardPage() {
           layers={layers}
           onLayersChange={setLayers}
           isLoading={gridsLoading}
+          colorMode={colorMode}
+          onColorModeChange={setColorMode}
         />
       </div>
 

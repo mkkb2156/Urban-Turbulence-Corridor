@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import clsx from 'clsx';
 import type { HeightOption, MapLayers } from '../api/types';
 import { DEFAULT_MAP_LAYERS } from '../api/types';
+import type { MapColorMode } from '../utils/colors';
 import { useGridCells, useCorridors } from '../api/hooks';
 import WindMap from '../components/map/WindMap';
 import RiskDistribution from '../components/dashboard/RiskDistribution';
@@ -18,6 +19,7 @@ export default function RiskPage() {
   const [tab, setTab] = useState<Tab>(initialTab);
   const [height, setHeight] = useState<HeightOption>(50);
   const [layers, setLayers] = useState<MapLayers>(DEFAULT_MAP_LAYERS);
+  const [colorMode, setColorMode] = useState<MapColorMode>('risk');
 
   const { data: gridCells, isLoading: gridsLoading } = useGridCells(height);
   const { data: corridors } = useCorridors();
@@ -69,6 +71,8 @@ export default function RiskPage() {
               layers={layers}
               onLayersChange={setLayers}
               isLoading={gridsLoading}
+              colorMode={colorMode}
+              onColorModeChange={setColorMode}
             />
           </div>
 

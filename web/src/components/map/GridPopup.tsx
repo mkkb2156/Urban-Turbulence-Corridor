@@ -1,4 +1,4 @@
-import { X, Wind, AlertTriangle, MapPin } from 'lucide-react';
+import { X, Wind, AlertTriangle, MapPin, Waves, Gauge, Shield } from 'lucide-react';
 import type { GridCell } from '../../api/types';
 import { RISK_COLORS, RISK_LABELS } from '../../utils/colors';
 import { formatWindSpeed, formatCoords, formatRiskScore } from '../../utils/format';
@@ -8,9 +8,19 @@ interface GridPopupProps {
   onClose: () => void;
 }
 
+function tiLabel(ti: number): { text: string; color: string } {
+  if (ti < 0.15) return { text: '極低', color: 'text-blue-600' };
+  if (ti < 0.25) return { text: '低', color: 'text-green-600' };
+  if (ti < 0.35) return { text: '中等', color: 'text-amber-600' };
+  if (ti < 0.50) return { text: '高', color: 'text-red-500' };
+  return { text: '極高', color: 'text-red-700' };
+}
+
 export default function GridPopup({ cell, onClose }: GridPopupProps) {
+  const hasDerived = cell.turbulence != null || cell.gust_factor != null || cell.shelter_index != null;
+
   return (
-    <div className="w-64 rounded-lg bg-white shadow-xl dark:bg-gray-800">
+    <div className="w-72 rounded-lg bg-white shadow-xl dark:bg-gray-800">
       {/* Header */}
       <div
         className="flex items-center justify-between rounded-t-lg px-3 py-2"
@@ -68,6 +78,42 @@ export default function GridPopup({ cell, onClose }: GridPopupProps) {
             </div>
           </div>
         </div>
+
+        {/* Derived data */}
+        {hasDerived && (
+          <div className="border-t border-gray-100 pt-2 dark:border-gray-700">
+            {cell.turbulence != null && (
+              <div className="flex items-center gap-2 py-0.5">
+                <Waves size={12} className="shrink-0 text-gray-400" />
+                <span className="text-xs text-gray-500 dark:text-gray-400">湍流</span>
+                <span className={`ml-auto text-xs font-medium ${tiLabel(cell.turbulence).color}`}>
+                  {cell.turbulence.toFixed(3)} ({tiLabel(cell.turbulence).text})
+                </span>
+              </div>
+            )}
+            {cell.gust_factor != null && (
+              <div className="flex items-center gap-2 py-0.5">
+                <Gauge size={12} className="shrink-0 text-gray-400" />
+                <span className="text-xs text-gray-500 dark:text-gray-400">陣風因子</span>
+                <span className="ml-auto text-xs font-medium text-gray-700 dark:text-gray-200">
+                  ×{cell.gust_factor.toFixed(2)}
+                  {cell.wind_speed > 0 && (
+                    <span className="text-gray-400"> → {(cell.wind_speed * cell.gust_factor).toFixed(1)} m/s</span>
+                  )}
+                </span>
+              </div>
+            )}
+            {cell.shelter_index != null && (
+              <div className="flex items-center gap-2 py-0.5">
+                <Shield size={12} className="shrink-0 text-gray-400" />
+                <span className="text-xs text-gray-500 dark:text-gray-400">遮蔽指數</span>
+                <span className="ml-auto text-xs font-medium text-gray-700 dark:text-gray-200">
+                  {cell.shelter_index.toFixed(3)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {cell.is_corridor && (
           <div className="mt-1 rounded bg-blue-50 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">

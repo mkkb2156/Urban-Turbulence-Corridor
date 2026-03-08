@@ -20,6 +20,8 @@ import type {
   MonitorResponse,
   BatchPointQuery,
   BatchRiskResponse,
+  DerivedData,
+  FlightWindowsResponse,
 } from './types';
 
 // ─── Query Keys ────────────────────────────────────────────────
@@ -195,6 +197,32 @@ export function useBatchRiskCheck() {
   return useMutation({
     mutationFn: (req: BatchPointQuery) =>
       apiClient.post<BatchRiskResponse>('/risk/batch', req),
+  });
+}
+
+// ─── Derived Data ────────────────────────────────────────────
+export function useDerivedData(gridId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['derived', gridId] as const,
+    queryFn: () => apiClient.get<DerivedData>(`/derived/${gridId}`),
+    enabled: enabled && !!gridId,
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+// ─── Flight Windows ──────────────────────────────────────────
+export function useFlightWindows(params: {
+  lon?: number;
+  lat?: number;
+  drone_id?: string;
+  hours?: number;
+  min_hours?: number;
+}, enabled = true) {
+  return useQuery({
+    queryKey: ['flight-windows', params] as const,
+    queryFn: () => apiClient.get<FlightWindowsResponse>('/forecast/flight-windows', params),
+    enabled: enabled && params.lon != null && params.lat != null,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

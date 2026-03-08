@@ -112,6 +112,105 @@ export function faiColor(value: number): string {
   return interpolateHexColor('#3b82f6', '#ef4444', t);
 }
 
+// ─── Gradient Color Scale (generic) ──────────────────────────
+function gradientColor(
+  value: number,
+  min: number,
+  max: number,
+  stops: [number, string][],
+): string {
+  const clamped = Math.min(Math.max(value, min), max);
+  if (clamped <= stops[0][0]) return stops[0][1];
+  for (let i = 1; i < stops.length; i++) {
+    if (clamped <= stops[i][0]) {
+      const t = (clamped - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]);
+      return interpolateHexColor(stops[i - 1][1], stops[i][1], t);
+    }
+  }
+  return stops[stops.length - 1][1];
+}
+
+// ─── Turbulence Color Scale (blue → yellow → red) ────────────
+const TURBULENCE_STOPS: [number, string][] = [
+  [0.1, '#3b82f6'],  // blue — 低湍流
+  [0.25, '#22c55e'], // green — 適中
+  [0.35, '#f59e0b'], // amber — 中等
+  [0.50, '#ef4444'], // red — 高湍流
+];
+
+export function turbulenceColor(ti: number): string {
+  return gradientColor(ti, 0.1, 0.5, TURBULENCE_STOPS);
+}
+
+// ─── Gust Factor Color Scale (green → orange → red) ─────────
+const GUST_FACTOR_STOPS: [number, string][] = [
+  [1.0, '#22c55e'],  // green — 低陣風
+  [1.5, '#84cc16'],  // lime
+  [2.0, '#f59e0b'],  // amber
+  [2.5, '#f97316'],  // orange
+  [3.0, '#ef4444'],  // red — 高陣風
+];
+
+export function gustFactorColor(gf: number): string {
+  return gradientColor(gf, 1.0, 3.0, GUST_FACTOR_STOPS);
+}
+
+// ─── Shelter Index Color Scale (light → dark) ────────────────
+const SHELTER_STOPS: [number, string][] = [
+  [0.0, '#dbeafe'],  // blue-100 — 低遮蔽
+  [0.3, '#60a5fa'],  // blue-400
+  [0.6, '#2563eb'],  // blue-600
+  [1.0, '#1e3a8a'],  // blue-900 — 高遮蔽
+];
+
+export function shelterColor(si: number): string {
+  return gradientColor(si, 0.0, 1.0, SHELTER_STOPS);
+}
+
+// ─── Color Mode Metadata ─────────────────────────────────────
+export type MapColorMode = 'risk' | 'turbulence' | 'gust_factor' | 'shelter' | 'wind_speed';
+
+export const COLOR_MODE_LABELS: Record<MapColorMode, string> = {
+  risk: '風險等級',
+  turbulence: '湍流強度',
+  gust_factor: '陣風因子',
+  shelter: '遮蔽指數',
+  wind_speed: '風速',
+};
+
+export const COLOR_MODE_LEGENDS: Record<MapColorMode, { label: string; color: string }[]> = {
+  risk: [
+    { label: '安全', color: RISK_COLORS.green },
+    { label: '注意', color: RISK_COLORS.yellow },
+    { label: '危險', color: RISK_COLORS.red },
+    { label: '極度危險', color: RISK_COLORS.black },
+  ],
+  turbulence: [
+    { label: '< 0.15 低', color: '#3b82f6' },
+    { label: '0.25 適中', color: '#22c55e' },
+    { label: '0.35 中等', color: '#f59e0b' },
+    { label: '> 0.5 高', color: '#ef4444' },
+  ],
+  gust_factor: [
+    { label: '< 1.5 低', color: '#22c55e' },
+    { label: '2.0', color: '#f59e0b' },
+    { label: '2.5', color: '#f97316' },
+    { label: '> 3.0 高', color: '#ef4444' },
+  ],
+  shelter: [
+    { label: '0 開闊', color: '#dbeafe' },
+    { label: '0.3', color: '#60a5fa' },
+    { label: '0.6', color: '#2563eb' },
+    { label: '1.0 密集', color: '#1e3a8a' },
+  ],
+  wind_speed: [
+    { label: '0 m/s', color: '#ffffb2' },
+    { label: '6 m/s', color: '#fd8d3c' },
+    { label: '9 m/s', color: '#f03b20' },
+    { label: '15+ m/s', color: '#800026' },
+  ],
+};
+
 // ─── Test Status Colors ────────────────────────────────────────
 export const TEST_STATUS_COLORS = {
   passed: '#2ecc71',

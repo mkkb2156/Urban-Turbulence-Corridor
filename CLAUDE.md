@@ -9,7 +9,7 @@
 ```
 Frontend:  React 18 + TypeScript + Vite + Tailwind CSS + MapLibre GL
 Backend:   FastAPI (Python 3.11+)
-Database:  Supabase PostGIS (1,470 grid cells + 10 wind corridors)
+Database:  Supabase PostGIS (1,470 grid cells + 10 wind corridors + 3 預留表)
 Deploy:    Vercel (static build + Python serverless)
 Data:      Open-Meteo (風速預報) + CWA 中央氣象署 (測站觀測)
 ```
@@ -24,11 +24,11 @@ web/                    # React 前端
   src/__tests__/        # Vitest 測試 (8 files)
 
 src/                    # Python 後端
-  api/                  # FastAPI app + routes (22 endpoints)
-  db/                   # SQLAlchemy models + PostGIS queries
+  api/                  # FastAPI app + routes (25 endpoints)
+  db/                   # SQLAlchemy models + PostGIS queries + migrations
   ingest/               # 資料匯入模組 (CWA, Open-Meteo, ERA5, OSM, NLSC, ESA, etc.)
   morphology/           # 地形分析 (BCR, FAI, roughness, SVF, street canyon)
-  risk/                 # 風險評分 + 無人機規格
+  risk/                 # 風險評分 + 無人機規格 + 衍生數據演算
   wind/                 # 風場模型 (corridor, log profile, Weibull, wind rose, LCP)
 ```
 
@@ -111,8 +111,13 @@ curl "http://localhost:8000/api/v1/wind?lon=121.5&lat=25.04&height=50"
 # 風險評估
 curl "http://localhost:8000/api/v1/risk?lon=121.5&lat=25.04&height=50"
 
+# 衍生數據
+curl http://localhost:8000/api/v1/derived/taipei_001_005
+curl "http://localhost:8000/api/v1/derived/taipei_001_005/flyability?drone_id=dji-mini4-pro"
+curl "http://localhost:8000/api/v1/forecast/flight-windows?lon=121.55&lat=25.03&drone_id=dji-mini4-pro"
+
 # 即時天氣預報
-curl "http://localhost:8000/api/v1/forecast?lon=121.5&lat=25.04"
+curl "http://localhost:8000/api/v1/forecast?city=taipei"
 curl http://localhost:8000/api/v1/forecast/stations
 
 # 系統監控
@@ -141,9 +146,9 @@ curl -X POST http://localhost:8000/api/v1/risk/batch \
 | 頁面 | 路徑 | 測試項目 |
 |------|------|---------|
 | 儀表板 | `/` | 統計卡片有數據、風花圖 16 方位、風險分布圓餅圖、地圖載入 grid cells |
-| 飛行分析 | `/analysis` | 繪製區域 → 顯示分析結果；繪製路線 → 路線比較表 |
+| 飛行分析 | `/analysis` | 繪製區域 → 顯示分析結果；繪製路線 → 路線比較表（含逆風/側風）|
 | 風廊 | `/corridors` | 10 條風廊列表、點擊展開詳情、地圖標記風廊路徑 |
-| 風險評估 | `/risk` | 色碼風險地圖、DroneCheck 單點查詢、批次查詢（CSV 上傳）|
+| 風險評估 | `/risk` | 色碼風險地圖（多色碼模式）、DroneCheck 單點查詢、批次查詢（CSV 上傳）|
 | FAI 分析 | `/fai` | 散佈圖載入、hover 顯示資訊 |
 | 系統監控 | `/monitor` | DB / Open-Meteo / CWA 狀態燈號正常 |
 | 使用指南 | `/guide` | 靜態頁面正常渲染 |
@@ -158,16 +163,35 @@ curl -X POST http://localhost:8000/api/v1/risk/batch \
 ## 已完成功能 Completed Features
 
 ### 核心功能
-- ✅ 互動式風險地圖（MapLibre GL + 色碼 grid cells）
+- ✅ 互動式風險地圖（MapLibre GL + 色碼 grid cells + 多色碼模式切換）
 - ✅ 風場粒子動畫（Windy.com 風格 Canvas overlay）
 - ✅ 風花圖（Recharts 16 方位）
 - ✅ 10 條台北風廊識別與地圖標註
 - ✅ DroneCheck 單點 + 批次飛行適性查詢
 - ✅ 區域分析（多邊形繪製 → 風場統計）
-- ✅ 路線規劃與比較（路徑繪製 → 風險分析）
+- ✅ 路線規劃與比較（路徑繪製 → 風險分析 + 逆風/側風分量）
 - ✅ FAI 正面面積指數分析
 - ✅ 即時天氣預報（Open-Meteo + CWA）
 - ✅ PDF 報告匯出
+
+### 衍生數據演算（Phase 3 新增）
+- ✅ 湍流強度指數 (TI) — `1 / ln((z-zd)/z0)` 三高度層
+- ✅ 風切變指數 — `ln(U₂/U₁) / ln(z₂/z₁)` 50↔80↔120m
+- ✅ 陣風因子 (GF) — `1 + 3×TI×(1+0.5×FAI_max)`
+- ✅ 建築遮蔽指數 — `(1-SVF)×(1+FAI)×BCR`
+- ✅ 可用飛行高度範圍 — min_safe_alt / max_legal_alt
+- ✅ 路線逆風/側風效率 — headwind / crosswind / wind_effect_pct
+- ✅ Weibull 超越機率 — `P(V>threshold) = exp(-(V/c)^k)`
+- ✅ 最佳飛行時段預測 — 從 72h 預報找連續適飛窗口
+- ✅ 衍生數據計算模組 (`src/risk/derived.py`)
+
+### 資料庫 Schema
+- ✅ `grid_cells` — 1,470 格 + 11 個衍生欄位（TI/shear/GF/shelter/alt）
+- ✅ `wind_corridors` — 10 條風廊
+- ✅ `airspace_zones` — 空域限制區（結構已建，待資料填入）
+- ✅ `flight_conditions` — 時序飛行條件（結構已建，待定期匯入）
+- ✅ `terrain_elevation` — 地形高程（結構已建，待 DEM 資料）
+- ✅ DB migration: `001_init_postgis.sql` + `002_derived_columns.sql`
 
 ### 平台功能
 - ✅ 全中文 UI
@@ -175,11 +199,11 @@ curl -X POST http://localhost:8000/api/v1/risk/batch \
 - ✅ 系統監控頁面（DB / API 狀態）
 - ✅ 集中式 logging + request middleware
 - ✅ Vercel 部署設定（`vercel.json`）
-- ✅ 前端 Vitest 測試（8 files）
+- ✅ 前端 Vitest 測試（8 files, 124 tests）
 
 ### 資料來源
 - ✅ Supabase PostGIS — 1,470 grid cells + 10 wind corridors
-- ✅ Open-Meteo — 風速/風向/陣風即時預報
+- ✅ Open-Meteo — 風速/風向/陣風即時預報（10m/80m/120m）
 - ✅ CWA 中央氣象署 — 測站觀測資料
 
 ---
@@ -190,7 +214,7 @@ curl -X POST http://localhost:8000/api/v1/risk/batch \
 
 讓產品「能放心展示」—— 確保每個功能都不會出錯。
 
-- [ ] **後端 pytest 測試套件** — 為所有 22 個 API endpoint 寫單元測試
+- [ ] **後端 pytest 測試套件** — 為所有 25 個 API endpoint 寫單元測試
 - [ ] **前端 E2E 測試** — Playwright 自動化測試關鍵用戶流程
 - [ ] **API 錯誤處理統一** — 標準 error response 格式 + 友善錯誤訊息
 - [ ] **效能優化** — 大量 grid cells 地圖渲染最佳化、API response caching (Redis)
@@ -202,12 +226,12 @@ curl -X POST http://localhost:8000/api/v1/risk/batch \
 
 | 資料源 | 用途 | 現狀 |
 |--------|------|------|
-| ERA5 再分析 | 歷史風場月/季平均統計 | ✅ ingest 模組已完成 (`src/ingest/era5.py`)，需接入 API |
-| 民航局空域 | 即時限航區/NOTAM | ✅ ingest 模組已完成 (`src/ingest/caa_airspace.py`)，需接入前端 |
-| NLSC 建築物 | 3D 建築模型 | ✅ ingest 模組已完成 (`src/ingest/nlsc_buildings.py`) |
-| ESA WorldCover | 土地覆蓋分類 | ✅ ingest 模組已完成 (`src/ingest/esa_worldcover.py`) |
-| GHS-BUILT-H | 全球建築高度 | ✅ ingest 模組已完成 (`src/ingest/ghs_built_h.py`) |
-| DEM 地形 | 數值高程模型 | ✅ ingest 模組已完成 (`src/ingest/dem_terrain.py`) |
+| ERA5 再分析 | 歷史風場月/季平均統計 | ✅ ingest 模組已完成，需接入 API |
+| 民航局空域 | 即時限航區/NOTAM | ✅ ingest 模組已完成 + DB 表已建，需接入前端 |
+| NLSC 建築物 | 3D 建築模型 | ✅ ingest 模組已完成 |
+| ESA WorldCover | 土地覆蓋分類 | ✅ ingest 模組已完成 |
+| GHS-BUILT-H | 全球建築高度 | ✅ ingest 模組已完成 |
+| DEM 地形 | 數值高程模型 | ✅ ingest 模組已完成 + DB 表已建 |
 | CWA 警特報 | 即時氣象警報 | 🔲 需新開發 |
 | 更多城市 | 高雄/台中/新竹 | 🔲 需匯入新城市 grid data |
 
@@ -217,15 +241,11 @@ curl -X POST http://localhost:8000/api/v1/risk/batch \
 
 讓產品「能賣出去」—— 針對不同客群提供核心價值。
 
-**🎯 目標客群與對應功能：**
-
 | 客群 | 需求 | 功能 |
 |------|------|------|
 | 無人機物流/運營商 | 飛行前風險評估、路線規劃 | 飛行計畫儲存 + PDF 報告匯出 + 即時風險警報 |
 | 保險公司 | 區域風險數據、理賠依據 | 歷史風險統計報告 + API 數據訂閱 |
 | 政府/都市規劃 | 城市風廊分析、法規合規 | 風廊影響評估報告 + 空域管理整合 |
-
-**功能開發清單：**
 
 - [ ] **用戶系統** — Supabase Auth（登入/註冊/角色管理）
 - [ ] **飛行計畫儲存** — 用戶可保存分析結果和路線規劃
@@ -236,8 +256,6 @@ curl -X POST http://localhost:8000/api/v1/risk/batch \
 - [ ] **即時風險推播** — WebSocket 通知高風險警報
 
 ### Phase 3D：部署與營運 (Deployment & Operations)
-
-讓產品「穩定運行」—— 可靠的 production 環境。
 
 - [ ] **Vercel 正式部署** — 連接 GitHub repo，push to main 自動部署
 - [ ] **自訂域名** — 綁定品牌域名 + SSL
@@ -287,15 +305,18 @@ npm run dev
 |--------|------|------|
 | GET | `/health` | 健康檢查 |
 | GET | `/api/v1/stats` | 儀表板統計數據 |
-| GET | `/api/v1/grids` | Grid cells 地圖資料 |
+| GET | `/api/v1/grids` | Grid cells 地圖資料（含衍生欄位） |
 | GET | `/api/v1/wind-rose` | 風花圖 16 方位資料 |
 | GET | `/api/v1/fai` | FAI 散佈圖資料 |
 | GET | `/api/v1/corridors` | 風廊列表 |
 | GET/POST | `/api/v1/wind` | 指定座標風場查詢 |
 | GET/POST | `/api/v1/risk` | 指定座標風險評估 |
 | POST | `/api/v1/risk/batch` | 批次風險查詢 |
+| GET | `/api/v1/derived/{grid_id}` | 網格衍生數據（TI/shear/gust/shelter/alt） |
+| GET | `/api/v1/derived/{grid_id}/flyability` | 結合衍生數據的適飛性檢查 |
+| GET | `/api/v1/forecast/flight-windows` | 最佳飛行時段 |
 | POST | `/api/v1/area/predict` | 區域風場分析 |
-| POST | `/api/v1/route/analyze` | 路線風場分析 |
+| POST | `/api/v1/route/analyze` | 路線風場分析（含逆風/側風） |
 | POST | `/api/v1/route/plan` | 最優路線規劃 |
 | POST | `/api/v1/report/generate` | 生成 PDF 報告 |
 | GET | `/api/v1/forecast` | 即時天氣預報 |
@@ -307,6 +328,20 @@ npm run dev
 
 ---
 
+## 衍生數據公式 Derived Data Formulas
+
+| 指標 | 公式 | 來源欄位 | 合理範圍 |
+|------|------|---------|---------|
+| 湍流強度 TI | `1 / ln((z-zd)/z0)` | z0, zd | 城市 0.2-0.5 |
+| 風切變指數 α | `ln(U₂/U₁) / ln(z₂/z₁)` | wind_50m/80m/120m | 0.1-0.5 |
+| 陣風因子 GF | `1 + 3×TI×(1+0.5×fai_max)` | TI, fai_max | 城市 1.5-3.0 |
+| 遮蔽指數 | `(1-SVF)×(1+FAI)×BCR` | svf, fai, bcr | 0-1 |
+| 最低安全高度 | `max(mean_h+20, max_h+10)` | mean/max_height | m AGL |
+| 逆風分量 | `wind × cos(wind_dir - bearing)` | 風速+路線方位 | m/s |
+| Weibull 超越 | `exp(-(V/c)^k)` | weibull_k/c | 0-1 機率 |
+
+---
+
 ## 開發注意事項 Development Notes
 
 - **前端開發**：所有 UI 文字使用中文
@@ -315,3 +350,4 @@ npm run dev
 - **Git 分支**：feature branches 使用 `claude/` prefix
 - **Lint**：`cd web && npm run lint`
 - **Type check**：`cd web && npx tsc --noEmit`
+- **DB migrations**：`src/db/migrations/` 目錄下的 SQL 檔案需在 Supabase SQL Editor 中手動執行
