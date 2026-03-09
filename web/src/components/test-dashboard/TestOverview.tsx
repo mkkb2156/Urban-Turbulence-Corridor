@@ -43,25 +43,25 @@ export default function TestOverview({ results, isLoading }: TestOverviewProps) 
 
   const stats: OverviewStat[] = [
     {
-      label: 'Passed',
+      label: '通過',
       value: results.total_passed,
       color: TEST_STATUS_COLORS.passed,
       icon: CheckCircle,
     },
     {
-      label: 'Failed',
+      label: '失敗',
       value: results.total_failed,
       color: TEST_STATUS_COLORS.failed,
       icon: XCircle,
     },
     {
-      label: 'Skipped',
+      label: '跳過',
       value: results.total_skipped,
       color: TEST_STATUS_COLORS.skipped,
       icon: MinusCircle,
     },
     {
-      label: 'Duration',
+      label: '耗時',
       value: results.total_duration,
       color: '#6b7280',
       icon: Clock,
@@ -83,7 +83,7 @@ export default function TestOverview({ results, isLoading }: TestOverviewProps) 
                   className="mt-1 text-2xl font-bold"
                   style={{ color: stat.color }}
                 >
-                  {stat.label === 'Duration'
+                  {stat.label === '耗時'
                     ? formatDuration(stat.value)
                     : stat.value}
                 </p>
@@ -98,19 +98,19 @@ export default function TestOverview({ results, isLoading }: TestOverviewProps) 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="card">
           <h4 className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
-            Backend (pytest)
+            後端 (pytest)
           </h4>
           <div className="flex items-baseline gap-4">
             <span className="text-xl font-bold" style={{ color: TEST_STATUS_COLORS.passed }}>
               {backendPassed}
             </span>
-            <span className="text-sm text-gray-500">passed</span>
+            <span className="text-sm text-gray-500">通過</span>
             {backendFailed > 0 && (
               <>
                 <span className="text-xl font-bold" style={{ color: TEST_STATUS_COLORS.failed }}>
                   {backendFailed}
                 </span>
-                <span className="text-sm text-gray-500">failed</span>
+                <span className="text-sm text-gray-500">失敗</span>
               </>
             )}
           </div>
@@ -133,19 +133,19 @@ export default function TestOverview({ results, isLoading }: TestOverviewProps) 
 
         <div className="card">
           <h4 className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
-            Frontend (vitest)
+            前端 (vitest)
           </h4>
           <div className="flex items-baseline gap-4">
             <span className="text-xl font-bold" style={{ color: TEST_STATUS_COLORS.passed }}>
               {frontendPassed}
             </span>
-            <span className="text-sm text-gray-500">passed</span>
+            <span className="text-sm text-gray-500">通過</span>
             {frontendFailed > 0 && (
               <>
                 <span className="text-xl font-bold" style={{ color: TEST_STATUS_COLORS.failed }}>
                   {frontendFailed}
                 </span>
-                <span className="text-sm text-gray-500">failed</span>
+                <span className="text-sm text-gray-500">失敗</span>
               </>
             )}
           </div>
@@ -170,7 +170,7 @@ export default function TestOverview({ results, isLoading }: TestOverviewProps) 
       {/* Last run timestamp */}
       {results.last_run && (
         <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
-          Last run: {formatDateTime(results.last_run)}
+          最後執行: {formatDateTime(results.last_run)}
         </p>
       )}
     </div>

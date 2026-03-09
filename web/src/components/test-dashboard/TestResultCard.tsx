@@ -63,16 +63,16 @@ export default function TestResultCard({ suite }: TestResultCardProps) {
           </div>
           <div className="mt-0.5 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
             <span style={{ color: TEST_STATUS_COLORS.passed }}>
-              {suite.passed} passed
+              {suite.passed} 通過
             </span>
             {suite.failed > 0 && (
               <span style={{ color: TEST_STATUS_COLORS.failed }}>
-                {suite.failed} failed
+                {suite.failed} 失敗
               </span>
             )}
             {suite.skipped > 0 && (
               <span style={{ color: TEST_STATUS_COLORS.skipped }}>
-                {suite.skipped} skipped
+                {suite.skipped} 跳過
               </span>
             )}
             <span>{formatDuration(suite.duration)}</span>

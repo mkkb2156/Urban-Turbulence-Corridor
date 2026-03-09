@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import clsx from 'clsx';
 import type { HeightOption, MapLayers } from '../api/types';
 import { DEFAULT_MAP_LAYERS } from '../api/types';
+import type { MapColorMode } from '../utils/colors';
 import { useGridCells, useCorridors } from '../api/hooks';
 import WindMap from '../components/map/WindMap';
 import RiskDistribution from '../components/dashboard/RiskDistribution';
@@ -18,24 +19,25 @@ export default function RiskPage() {
   const [tab, setTab] = useState<Tab>(initialTab);
   const [height, setHeight] = useState<HeightOption>(50);
   const [layers, setLayers] = useState<MapLayers>(DEFAULT_MAP_LAYERS);
+  const [colorMode, setColorMode] = useState<MapColorMode>('risk');
 
   const { data: gridCells, isLoading: gridsLoading } = useGridCells(height);
   const { data: corridors } = useCorridors();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'map', label: 'Risk Map' },
-    { id: 'drone', label: 'Drone Check' },
+    { id: 'map', label: '風險地圖' },
+    { id: 'drone', label: '無人機檢查' },
   ];
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          Risk Assessment
+          風險評估
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Evaluate wind risk levels and check drone flyability
+          評估風場風險等級與無人機適飛性
         </p>
       </div>
 
@@ -69,6 +71,8 @@ export default function RiskPage() {
               layers={layers}
               onLayersChange={setLayers}
               isLoading={gridsLoading}
+              colorMode={colorMode}
+              onColorModeChange={setColorMode}
             />
           </div>
 

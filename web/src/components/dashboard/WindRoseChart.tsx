@@ -101,7 +101,7 @@ export default function WindRoseChart({
   return (
     <div className="card">
       <h3 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
-        Wind Rose
+        風花圖
       </h3>
       <svg
         width={size}
@@ -183,7 +183,7 @@ export default function WindRoseChart({
 
       {/* Legend footnote */}
       <p className="mt-2 text-center text-xs text-gray-400 dark:text-gray-500">
-        NE monsoon directions highlighted in blue
+        東北季風方向以藍色標示
       </p>
     </div>
   );

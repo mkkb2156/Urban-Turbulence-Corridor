@@ -1,24 +1,18 @@
-"""區域預測 API（mock data for demo）。"""
+"""區域預測 API。"""
 
 from __future__ import annotations
 
+import logging
 import math
 import random
 from datetime import datetime, timezone
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
 
+from src.api.schemas import AreaPredictRequest
+
+logger = logging.getLogger(__name__)
 router = APIRouter()
-
-
-class AreaPredictRequest(BaseModel):
-    """多邊形區域預測請求。"""
-    polygon: list[list[float]] = Field(..., description="多邊形頂點 [[lon,lat], ...]")
-    height: float = Field(50.0, ge=0, le=500, description="飛行高度 (m)")
-    drone_id: str | None = Field(None, description="無人機型號")
-    start_time: str | None = Field(None, description="起始時間 (ISO)")
-    end_time: str | None = Field(None, description="結束時間 (ISO)")
 
 
 def _polygon_center(polygon: list[list[float]]) -> tuple[float, float]:
@@ -44,24 +38,63 @@ def _polygon_area_approx(polygon: list[list[float]]) -> float:
     return area * 111 * 111
 
 
-def _generate_mock_grid_cells(polygon: list[list[float]], height: float) -> list[dict]:
-    """在多邊形範圍內生成 mock grid cells。"""
+def _point_in_polygon(lon: float, lat: float, polygon: list[list[float]]) -> bool:
+    """射線法判斷點是否在多邊形內。"""
+    n = len(polygon)
+    inside = False
+    j = n - 1
+    for i in range(n):
+        xi, yi = polygon[i]
+        xj, yj = polygon[j]
+        if ((yi > lat) != (yj > lat)) and (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi):
+            inside = not inside
+        j = i
+    return inside
+
+
+def _query_grid_cells(polygon: list[list[float]], height: float) -> list[dict]:
+    """查詢多邊形範圍內的網格，優先使用 DB，fallback 使用模擬。"""
     lons = [p[0] for p in polygon]
     lats = [p[1] for p in polygon]
     min_lon, max_lon = min(lons), max(lons)
     min_lat, max_lat = min(lats), max(lats)
 
-    step = 0.005  # ~500m grid
+    height_col = f"wind_{int(height)}m" if int(height) in (50, 80, 120) else "wind_50m"
+
+    # 嘗試從 DB 查詢
+    try:
+        from src.db.queries import query_grid_by_bbox
+        gdf = query_grid_by_bbox(min_lon, min_lat, max_lon, max_lat)
+        if len(gdf) > 0:
+            cells = []
+            for _, row in gdf.iterrows():
+                geom = row.geometry
+                clon, clat = geom.centroid.x, geom.centroid.y
+                if not _point_in_polygon(clon, clat, polygon):
+                    continue
+                speed = row.get(height_col, row.get("wind_50m", 4.0)) or 4.0
+                cells.append({
+                    "lon": round(clon, 6),
+                    "lat": round(clat, 6),
+                    "wind_speed": round(float(speed), 1),
+                    "wind_direction": 45.0,
+                    "risk_level": row.get("risk_level", "green"),
+                })
+            if cells:
+                logger.info("Area predict: %d cells from DB", len(cells))
+                return cells
+    except Exception as e:
+        logger.debug("Area predict DB fallback: %s", e)
+
+    # Fallback: 模擬風場
+    step = 0.005
     cells = []
     lon = min_lon
     while lon <= max_lon:
         lat = min_lat
         while lat <= max_lat:
-            # 高度修正
-            z0 = 1.0
-            zd = 15.0
+            z0, zd = 1.0, 15.0
             h_factor = math.log(max(height - zd, 1) / z0) / math.log(10 / z0) if height > zd + z0 else 1.0
-
             base = 3.0 + random.gauss(0, 1.5)
             speed = max(0.5, round(base * h_factor, 1))
             direction = round((45 + random.gauss(0, 30)) % 360, 1)
@@ -96,7 +129,7 @@ async def predict_area(req: AreaPredictRequest):
 
     center_lon, center_lat = _polygon_center(req.polygon)
     area_km2 = _polygon_area_approx(req.polygon)
-    cells = _generate_mock_grid_cells(req.polygon, req.height)
+    cells = _query_grid_cells(req.polygon, req.height)
 
     if not cells:
         cells = [{"lon": center_lon, "lat": center_lat, "wind_speed": 4.5,

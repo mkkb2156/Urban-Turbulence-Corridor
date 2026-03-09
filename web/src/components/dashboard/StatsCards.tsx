@@ -30,27 +30,27 @@ export default function StatsCards({ stats, isLoading }: StatsCardsProps) {
   const cards: StatCardData[] = stats
     ? [
         {
-          label: 'Grid Cells',
+          label: '網格數',
           value: abbreviateNumber(stats.total_grids),
-          subtext: `${stats.monitoring_area_km2.toFixed(1)} km\u00B2 monitored`,
+          subtext: `監測面積 ${stats.monitoring_area_km2.toFixed(1)} km\u00B2`,
           icon: Grid3x3,
           color: 'text-blue-500',
         },
         {
-          label: 'Mean Wind Speed',
+          label: '平均風速',
           value: formatWindSpeed(stats.mean_wind_speed),
           icon: Wind,
           color: 'text-teal-500',
         },
         {
-          label: 'Wind Corridors',
+          label: '風廊數量',
           value: String(stats.corridor_count),
-          subtext: 'active corridors detected',
+          subtext: '台北都會區已識別風廊',
           icon: Route,
           color: 'text-purple-500',
         },
         {
-          label: 'Last Updated',
+          label: '最後更新',
           value: formatRelativeTime(stats.last_updated),
           icon: Activity,
           color: 'text-orange-500',

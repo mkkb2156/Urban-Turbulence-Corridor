@@ -18,6 +18,7 @@ from typing import Sequence
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 from scipy.ndimage import label as ndimage_label
 from scipy.sparse.csgraph import shortest_path
 from shapely.geometry import LineString, Point
@@ -182,38 +183,121 @@ def trace_least_cost_path(
     return path
 
 
+def _direction_to_boundaries(
+    wind_direction_deg: float,
+    rows_max: int,
+    cols_max: int,
+    index_map: dict,
+) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
+    """根據風向角度自動決定 source（上風側）與 target（下風側）邊界。
+
+    風從 source 吹向 target。例如 NE 風（45°）從北/東邊進入，往南/西邊吹。
+
+    Args:
+        wind_direction_deg: 風向角度（氣象慣例，0=N, 90=E, 180=S, 270=W）。
+        rows_max: 網格最大行號。
+        cols_max: 網格最大列號。
+        index_map: (row, col) → grid_id 對照。
+
+    Returns:
+        (source_cells, target_cells) — 各為 (row, col) 列表。
+    """
+    # 正規化到 0-360
+    d = wind_direction_deg % 360
+
+    # 根據風向決定邊界：風從 source 側進入
+    # 行號：0=北，rows_max=南
+    # 列號：0=西，cols_max=東
+    north = [(0, c) for c in range(cols_max + 1)]
+    south = [(rows_max, c) for c in range(cols_max + 1)]
+    east = [(r, cols_max) for r in range(rows_max + 1)]
+    west = [(r, 0) for r in range(rows_max + 1)]
+
+    if 337.5 <= d or d < 22.5:       # N
+        source, target = north, south
+    elif 22.5 <= d < 67.5:            # NE
+        source, target = north + east, south + west
+    elif 67.5 <= d < 112.5:           # E
+        source, target = east, west
+    elif 112.5 <= d < 157.5:          # SE
+        source, target = south + east, north + west
+    elif 157.5 <= d < 202.5:          # S
+        source, target = south, north
+    elif 202.5 <= d < 247.5:          # SW
+        source, target = south + west, north + east
+    elif 247.5 <= d < 292.5:          # W
+        source, target = west, east
+    else:                              # NW (292.5-337.5)
+        source, target = north + west, south + east
+
+    # 過濾只保留有效的網格座標
+    source = [(r, c) for r, c in source if (r, c) in index_map]
+    target = [(r, c) for r, c in target if (r, c) in index_map]
+
+    return source, target
+
+
+def _direction_to_fai_col(wind_direction_deg: float, grid: gpd.GeoDataFrame) -> str:
+    """根據風向選擇最適合的 FAI 欄位。
+
+    Args:
+        wind_direction_deg: 風向角度。
+        grid: 網格 GeoDataFrame。
+
+    Returns:
+        FAI 欄位名稱。
+    """
+    d = wind_direction_deg % 360
+    # NE 季風 (0-90°) 用 fai_ne；SW 季風 (180-270°) 用 fai_sw
+    if 135 <= d < 315 and "fai_sw" in grid.columns:
+        return "fai_sw"
+    if "fai_ne" in grid.columns:
+        return "fai_ne"
+    # 其他 FAI 方向欄位名稱 fallback
+    fai_cols = [c for c in grid.columns if c.startswith("fai_")]
+    return fai_cols[0] if fai_cols else "fai_ne"
+
+
 def identify_wind_corridors(
     grid: gpd.GeoDataFrame,
-    fai_col: str = "fai_ne",
+    fai_col: str | None = None,
     source_cells: list[tuple[int, int]] | None = None,
     target_cells: list[tuple[int, int]] | None = None,
     n_corridors: int = 10,
+    wind_direction: float | None = None,
 ) -> gpd.GeoDataFrame:
     """辨識風廊路徑。
 
     Args:
         grid: 含 FAI 欄位的分析網格。
-        fai_col: FAI 欄位名稱。
-        source_cells: 風源點 (row, col)，None 時使用上邊界。
-        target_cells: 目標點 (row, col)，None 時使用下邊界。
+        fai_col: FAI 欄位名稱，None 時根據 wind_direction 自動選擇。
+        source_cells: 風源點 (row, col)，None 時根據 wind_direction 自動決定。
+        target_cells: 目標點 (row, col)，None 時根據 wind_direction 自動決定。
         n_corridors: 最大風廊數量。
+        wind_direction: 風向角度（氣象慣例 0=N），None 時預設 NE (45°)。
 
     Returns:
         風廊 GeoDataFrame，含路徑幾何與成本資訊。
     """
+    if wind_direction is None:
+        wind_direction = 45.0  # 預設東北季風
+
+    if fai_col is None:
+        fai_col = _direction_to_fai_col(wind_direction, grid)
+
     cost_surface, index_map = fai_to_cost_surface(grid, fai_col)
     rows_max = grid["row"].max()
     cols_max = grid["col"].max()
 
-    # 預設源點：上邊界（假設東北季風從北方進入）
-    if source_cells is None:
-        source_cells = [(0, c) for c in range(cols_max + 1)]
-        source_cells = [(r, c) for r, c in source_cells if (r, c) in index_map]
-
-    # 預設目標點：下邊界
-    if target_cells is None:
-        target_cells = [(rows_max, c) for c in range(cols_max + 1)]
-        target_cells = [(r, c) for r, c in target_cells if (r, c) in index_map]
+    # 根據風向自動決定 source/target 邊界
+    if source_cells is None or target_cells is None:
+        auto_source, auto_target = _direction_to_boundaries(
+            wind_direction, rows_max, cols_max, index_map,
+        )
+        if source_cells is None:
+            source_cells = auto_source
+        if target_cells is None:
+            target_cells = auto_target
 
     if not source_cells or not target_cells:
         logger.warning("No valid source or target cells, returning empty corridors")
@@ -248,6 +332,7 @@ def identify_wind_corridors(
                 "geometry": LineString(path_coords),
                 "total_cost": total_cost,
                 "length_cells": len(path),
+                "wind_direction_deg": wind_direction,
                 "path_cells": [index_map.get((r, c), "") for r, c in path],
             })
 
@@ -296,6 +381,103 @@ def corridors_to_grid_mask(
     )
 
     return grid
+
+
+def identify_corridors_multi_direction(
+    grid: gpd.GeoDataFrame,
+    directions: list[float] | None = None,
+    n_corridors_per_direction: int = 5,
+    n_corridors_total: int = 10,
+) -> gpd.GeoDataFrame:
+    """辨識多風向風廊並合併去重。
+
+    Args:
+        grid: 含 FAI 欄位的分析網格。
+        directions: 風向角度列表，None 時使用 NE + SW 兩季風方向。
+        n_corridors_per_direction: 每個方向最大風廊數。
+        n_corridors_total: 合併後最大風廊數。
+
+    Returns:
+        合併去重後的風廊 GeoDataFrame。
+    """
+    if directions is None:
+        directions = [45.0, 225.0]  # NE + SW 台灣兩大季風
+
+    all_corridors = []
+    for direction in directions:
+        gdf = identify_wind_corridors(
+            grid,
+            n_corridors=n_corridors_per_direction,
+            wind_direction=direction,
+        )
+        if not gdf.empty:
+            # 加上方向前綴避免 ID 衝突
+            dir_label = _deg_to_label(direction)
+            gdf["corridor_id"] = gdf["corridor_id"].apply(
+                lambda cid: f"{dir_label}_{cid}",
+            )
+            all_corridors.append(gdf)
+
+    if not all_corridors:
+        return gpd.GeoDataFrame(
+            columns=["corridor_id", "geometry", "total_cost", "wind_direction_deg"],
+        )
+
+    merged = gpd.GeoDataFrame(
+        pd.concat(all_corridors, ignore_index=True),
+        crs=CRS_INTERNAL,
+    )
+
+    # 去重：移除空間上高度重疊的風廊（>70% 重疊）
+    merged = _deduplicate_corridors(merged, overlap_threshold=0.7)
+
+    # 按成本排序取 top N
+    merged = merged.sort_values("total_cost").head(n_corridors_total).reset_index(drop=True)
+
+    logger.info(
+        "Multi-direction corridors: %d directions → %d corridors",
+        len(directions), len(merged),
+    )
+    return merged
+
+
+def _deg_to_label(deg: float) -> str:
+    """將角度轉換為風向標籤。"""
+    labels = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+    idx = round(deg / 45) % 8
+    return labels[idx]
+
+
+def _deduplicate_corridors(
+    corridors: gpd.GeoDataFrame,
+    overlap_threshold: float = 0.7,
+) -> gpd.GeoDataFrame:
+    """移除空間上高度重疊的風廊。"""
+    if len(corridors) <= 1:
+        return corridors
+
+    keep = [True] * len(corridors)
+    buffer_dist = 100.0  # 100m buffer for overlap check
+
+    for i in range(len(corridors)):
+        if not keep[i]:
+            continue
+        geom_i = corridors.iloc[i].geometry.buffer(buffer_dist)
+        for j in range(i + 1, len(corridors)):
+            if not keep[j]:
+                continue
+            geom_j = corridors.iloc[j].geometry.buffer(buffer_dist)
+            intersection = geom_i.intersection(geom_j).area
+            smaller_area = min(geom_i.area, geom_j.area)
+            if smaller_area > 0 and intersection / smaller_area > overlap_threshold:
+                # 保留成本較低的那條
+                if corridors.iloc[j]["total_cost"] < corridors.iloc[i]["total_cost"]:
+                    keep[i] = False
+                    break
+                else:
+                    keep[j] = False
+
+    return corridors[keep].reset_index(drop=True)
 
 
 if __name__ == "__main__":

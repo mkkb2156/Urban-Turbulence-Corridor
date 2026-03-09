@@ -1,12 +1,23 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import type { GridCell, Corridor, MapLayers, HeightOption } from '../../api/types';
-import { RISK_COLORS, CORRIDOR_COLORS } from '../../utils/colors';
+import {
+  RISK_COLORS,
+  CORRIDOR_COLORS,
+  turbulenceColor,
+  gustFactorColor,
+  shelterColor,
+  windSpeedColor,
+} from '../../utils/colors';
+import type { MapColorMode } from '../../utils/colors';
 import { DEFAULT_CENTER, DEFAULT_ZOOM, gridCellPolygon } from '../../utils/geo';
 import MapControls from './MapControls';
 import RiskLegend from './RiskLegend';
 import GridPopup from './GridPopup';
 import WindArrowLayer from './WindArrowLayer';
+import WindParticleLayer from './WindParticleLayer';
+import ContourLayer from './ContourLayer';
+import RegionalWindLayer from './RegionalWindLayer';
 
 interface WindMapProps {
   gridCells?: GridCell[];
@@ -16,6 +27,24 @@ interface WindMapProps {
   layers: MapLayers;
   onLayersChange: (layers: MapLayers) => void;
   isLoading?: boolean;
+  colorMode?: MapColorMode;
+  onColorModeChange?: (mode: MapColorMode) => void;
+}
+
+function getCellColor(cell: GridCell, mode: MapColorMode): string {
+  switch (mode) {
+    case 'turbulence':
+      return cell.turbulence != null ? turbulenceColor(cell.turbulence) : '#cccccc';
+    case 'gust_factor':
+      return cell.gust_factor != null ? gustFactorColor(cell.gust_factor) : '#cccccc';
+    case 'shelter':
+      return cell.shelter_index != null ? shelterColor(cell.shelter_index) : '#cccccc';
+    case 'wind_speed':
+      return windSpeedColor(cell.wind_speed);
+    case 'risk':
+    default:
+      return RISK_COLORS[cell.risk_level];
+  }
 }
 
 export default function WindMap({
@@ -26,6 +55,8 @@ export default function WindMap({
   layers,
   onLayersChange,
   isLoading,
+  colorMode = 'risk',
+  onColorModeChange,
 }: WindMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -40,6 +71,7 @@ export default function WindMap({
       container: containerRef.current,
       style: {
         version: 8,
+        glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
         sources: {
           'osm-tiles': {
             type: 'raster',
@@ -107,6 +139,24 @@ export default function WindMap({
         },
       });
 
+      // Corridor glow (primary only)
+      map.addLayer({
+        id: 'corridors-primary-glow',
+        type: 'line',
+        source: 'corridors',
+        filter: ['==', ['get', 'type'], 'primary'],
+        paint: {
+          'line-color': CORRIDOR_COLORS.primary,
+          'line-width': 12,
+          'line-opacity': 0.15,
+          'line-blur': 6,
+        },
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+      });
+
       // Corridor lines - primary
       map.addLayer({
         id: 'corridors-primary',
@@ -115,8 +165,8 @@ export default function WindMap({
         filter: ['==', ['get', 'type'], 'primary'],
         paint: {
           'line-color': CORRIDOR_COLORS.primary,
-          'line-width': 4,
-          'line-opacity': 0.8,
+          'line-width': 6,
+          'line-opacity': 0.85,
         },
         layout: {
           'line-cap': 'round',
@@ -140,6 +190,28 @@ export default function WindMap({
           'line-join': 'round',
         },
       });
+
+      // Corridor name labels
+      map.addLayer({
+        id: 'corridors-labels',
+        type: 'symbol',
+        source: 'corridors',
+        filter: ['==', ['get', 'type'], 'primary'],
+        layout: {
+          'symbol-placement': 'line-center',
+          'text-field': ['get', 'name'],
+          'text-size': 13,
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-anchor': 'center',
+          'text-offset': [0, -1],
+          'text-allow-overlap': false,
+        },
+        paint: {
+          'text-color': '#1e3a5f',
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2,
+        },
+      });
     });
 
     // Click handler for grid cells
@@ -157,6 +229,9 @@ export default function WindMap({
           wind_speed: props.wind_speed as number,
           wind_direction: props.wind_direction as string,
           is_corridor: props.is_corridor as boolean,
+          turbulence: props.turbulence != null ? Number(props.turbulence) : null,
+          gust_factor: props.gust_factor != null ? Number(props.gust_factor) : null,
+          shelter_index: props.shelter_index != null ? Number(props.shelter_index) : null,
         });
         setPopupPosition({ x: e.point.x, y: e.point.y });
       }
@@ -199,7 +274,7 @@ export default function WindMap({
       },
       properties: {
         ...cell,
-        color: RISK_COLORS[cell.risk_level],
+        color: getCellColor(cell, colorMode),
       },
     }));
 
@@ -207,7 +282,7 @@ export default function WindMap({
       type: 'FeatureCollection',
       features,
     });
-  }, [gridCells, layers.risk]);
+  }, [gridCells, layers.risk, colorMode]);
 
   // Update corridors data
   useEffect(() => {
@@ -252,8 +327,10 @@ export default function WindMap({
 
     setLayerVisibility('grid-cells-fill', layers.risk);
     setLayerVisibility('grid-cells-outline', layers.risk);
+    setLayerVisibility('corridors-primary-glow', layers.corridors);
     setLayerVisibility('corridors-primary', layers.corridors);
     setLayerVisibility('corridors-secondary', layers.corridors);
+    setLayerVisibility('corridors-labels', layers.corridors);
   }, [layers]);
 
   const handleClosePopup = useCallback(() => {
@@ -272,7 +349,7 @@ export default function WindMap({
           <div className="flex items-center gap-2 rounded-md bg-white px-4 py-2 shadow dark:bg-gray-800">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
             <span className="text-sm text-gray-600 dark:text-gray-300">
-              Loading map data...
+              載入地圖資料中...
             </span>
           </div>
         </div>
@@ -285,6 +362,8 @@ export default function WindMap({
           onHeightChange={onHeightChange}
           layers={layers}
           onLayersChange={onLayersChange}
+          colorMode={colorMode}
+          onColorModeChange={onColorModeChange}
         />
       </div>
 
@@ -295,9 +374,31 @@ export default function WindMap({
         visible={layers.wind_arrows}
       />
 
+      {/* Wind particle animation layer */}
+      <WindParticleLayer
+        map={mapRef.current}
+        gridCells={gridCells}
+        visible={layers.particles}
+      />
+
+      {/* Contour / isoline layer (smooth interpolated field) */}
+      <ContourLayer
+        map={mapRef.current}
+        gridCells={gridCells}
+        visible={layers.contours}
+        colorMode={colorMode}
+      />
+
+      {/* Regional wind layer (large-area Open-Meteo data, visible at low zoom) */}
+      <RegionalWindLayer
+        map={mapRef.current}
+        visible={layers.particles}
+        height={height}
+      />
+
       {/* Risk legend */}
       <div className="absolute bottom-8 left-3 z-10">
-        <RiskLegend />
+        <RiskLegend colorMode={colorMode} />
       </div>
 
       {/* Grid popup */}

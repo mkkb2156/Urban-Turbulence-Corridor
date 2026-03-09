@@ -21,14 +21,14 @@ export default function DrawingToolbar({
   className,
 }: DrawingToolbarProps) {
   const tools: { id: DrawMode; icon: typeof Pentagon; label: string; description: string }[] = [
-    { id: 'polygon', icon: Pentagon, label: 'Area', description: 'Draw polygon to analyze area' },
-    { id: 'route', icon: Route, label: 'Route', description: 'Draw route for wind analysis' },
-    { id: 'point', icon: MapPin, label: 'Point', description: 'Drop pins for start/end' },
+    { id: 'polygon', icon: Pentagon, label: '區域', description: '繪製多邊形分析區域風場' },
+    { id: 'route', icon: Route, label: '路線', description: '繪製路線進行風場分析' },
+    { id: 'point', icon: MapPin, label: '點位', description: '放置起始/結束點' },
   ];
 
   return (
     <div className={clsx('flex flex-col gap-1 rounded-md bg-white p-1.5 shadow-md dark:bg-gray-800', className)}>
-      <div className="px-1.5 py-1 text-xs font-medium text-gray-400">Draw</div>
+      <div className="px-1.5 py-1 text-xs font-medium text-gray-400">繪圖工具</div>
       {tools.map(({ id, icon: Icon, label, description }) => (
         <button
           key={id}
@@ -54,14 +54,14 @@ export default function DrawingToolbar({
             className="flex items-center gap-2 rounded px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             <Undo2 size={14} />
-            <span>Undo</span>
+            <span>復原</span>
           </button>
           <button
             onClick={onClear}
             className="flex items-center gap-2 rounded px-2 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
           >
             <Trash2 size={14} />
-            <span>Clear</span>
+            <span>清除</span>
           </button>
         </>
       )}

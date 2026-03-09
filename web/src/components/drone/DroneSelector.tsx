@@ -39,7 +39,7 @@ export default function DroneSelector({ selected, onSelect, compact }: DroneSele
       >
         <Plane size={compact ? 14 : 16} className="text-blue-500" />
         <span className={clsx('font-medium text-gray-700 dark:text-gray-200', compact ? 'text-xs' : 'text-sm')}>
-          {selected ? selected.name : 'Select Drone'}
+          {selected ? selected.name : '選擇無人機'}
         </span>
         <ChevronDown size={14} className={clsx('text-gray-400 transition-transform', open && 'rotate-180')} />
       </button>
@@ -54,7 +54,7 @@ export default function DroneSelector({ selected, onSelect, compact }: DroneSele
                 !selected && 'bg-blue-50 dark:bg-blue-900/30',
               )}
             >
-              <span className="text-gray-500">No drone selected</span>
+              <span className="text-gray-500">未選擇無人機</span>
             </button>
             {DRONE_MODELS.map((drone) => (
               <button
@@ -68,11 +68,11 @@ export default function DroneSelector({ selected, onSelect, compact }: DroneSele
                 <div>
                   <div className="font-medium text-gray-800 dark:text-gray-200">{drone.name}</div>
                   <div className="text-xs text-gray-500">
-                    Max {drone.max_wind_speed} m/s &middot; {drone.weight_kg} kg
+                    最大 {drone.max_wind_speed} m/s &middot; {drone.weight_kg} kg
                   </div>
                 </div>
                 <span className={clsx('rounded-full px-2 py-0.5 text-xs font-medium', categoryColors[drone.category] || categoryColors.consumer)}>
-                  {drone.category}
+                  {drone.category === 'consumer' ? '消費級' : drone.category === 'prosumer' ? '專業級' : '企業級'}
                 </span>
               </button>
             ))}

@@ -60,6 +60,18 @@ class GridCell(Base):
     risk_level = Column(String(20))
     risk_score = Column(Float)
 
+    # 衍生指標（Phase 3）
+    turbulence_50m = Column(Float)
+    turbulence_80m = Column(Float)
+    turbulence_120m = Column(Float)
+    shear_50_80 = Column(Float)
+    shear_80_120 = Column(Float)
+    gust_factor = Column(Float)
+    shelter_index = Column(Float)
+    min_safe_alt = Column(Float)
+    max_legal_alt = Column(Float, default=120.0)
+    wind_direction_deg = Column(Float)
+
     # 中繼資料
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -105,3 +117,84 @@ class WindObservation(Base):
     wind_speed = Column(Float)  # m/s
     wind_direction = Column(Float)  # degrees
     gust_speed = Column(Float)  # m/s
+
+
+class AirspaceZone(Base):
+    """空域限制區。"""
+
+    __tablename__ = "airspace_zones"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    zone_id = Column(Text, unique=True, nullable=False)
+    name = Column(Text, nullable=False)
+    zone_type = Column(Text, nullable=False)  # prohibited / restricted / airport / military / special
+    restriction = Column(Text)  # no_fly / height_limit / permit_required
+    max_height_m = Column(Float)
+    geometry = Column(Geometry("POLYGON", srid=3826), nullable=False)
+    source = Column(Text, default="caa")
+    valid_from = Column(DateTime)
+    valid_until = Column(DateTime)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class FlightCondition(Base):
+    """時序飛行條件。"""
+
+    __tablename__ = "flight_conditions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    grid_id = Column(Text, nullable=False, index=True)
+    forecast_time = Column(DateTime, nullable=False, index=True)
+    wind_speed_50m = Column(Float)
+    wind_speed_80m = Column(Float)
+    wind_speed_120m = Column(Float)
+    wind_direction = Column(Float)
+    gust_speed = Column(Float)
+    risk_level = Column(Text)
+    turbulence_intensity = Column(Float)
+    source = Column(Text, default="open_meteo")
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class TerrainElevation(Base):
+    """地形高程。"""
+
+    __tablename__ = "terrain_elevation"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    grid_id = Column(Text, unique=True, nullable=False)
+    dem_elevation = Column(Float)  # 地面高程 (m, MSL)
+    dsm_elevation = Column(Float)  # 含建物高程 (m, MSL)
+    slope_deg = Column(Float)
+    aspect_deg = Column(Float)
+    source = Column(Text, default="copernicus_glo30")
+
+
+class APIKey(Base):
+    """API Key。"""
+
+    __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    key_hash = Column(Text, unique=True, nullable=False)
+    name = Column(Text, nullable=False)
+    owner_email = Column(Text)
+    plan = Column(Text, nullable=False, default="free")  # free / pro / enterprise
+    rate_limit_per_min = Column(Integer, default=60)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, server_default=func.now())
+    last_used_at = Column(DateTime)
+
+
+class APIUsage(Base):
+    """API 使用量記錄。"""
+
+    __tablename__ = "api_usage"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    api_key_id = Column(Integer)  # FK to api_keys.id
+    endpoint = Column(Text, nullable=False)
+    method = Column(Text, nullable=False)
+    status_code = Column(Integer)
+    response_time_ms = Column(Float)
+    created_at = Column(DateTime, server_default=func.now())

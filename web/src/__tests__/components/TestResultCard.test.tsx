@@ -54,9 +54,9 @@ describe('TestResultCard', () => {
 
   it('should display pass/fail/skip counts', () => {
     render(<TestResultCard suite={mockFailingSuite} />);
-    expect(screen.getByText('1 passed')).toBeInTheDocument();
-    expect(screen.getByText('1 failed')).toBeInTheDocument();
-    expect(screen.getByText('1 skipped')).toBeInTheDocument();
+    expect(screen.getByText(/1\s*通過/)).toBeInTheDocument();
+    expect(screen.getByText(/1\s*失敗/)).toBeInTheDocument();
+    expect(screen.getByText(/1\s*跳過/)).toBeInTheDocument();
   });
 
   it('should show 100% pass rate for fully passing suite', () => {

@@ -52,7 +52,7 @@ export default function RiskDistribution({
     <div className="card">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-          Risk Distribution
+          風險分布
         </h3>
         <div className="flex gap-1">
           {(['pie', 'bar'] as ChartType[]).map((type) => (
@@ -66,7 +66,7 @@ export default function RiskDistribution({
                   : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700',
               )}
             >
-              {type === 'pie' ? 'Pie' : 'Bar'}
+              {type === 'pie' ? '圓餅圖' : '長條圖'}
             </button>
           ))}
         </div>
@@ -97,8 +97,8 @@ export default function RiskDistribution({
               </Pie>
               <Tooltip
                 formatter={(value: number) => [
-                  `${value} grids (${total > 0 ? ((value / total) * 100).toFixed(1) : 0}%)`,
-                  'Count',
+                  `${value} 格 (${total > 0 ? ((value / total) * 100).toFixed(1) : 0}%)`,
+                  '數量',
                 ]}
               />
             </PieChart>
@@ -108,8 +108,8 @@ export default function RiskDistribution({
               <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 11 }} />
               <Tooltip
                 formatter={(value: number) => [
-                  `${value} grids (${total > 0 ? ((value / total) * 100).toFixed(1) : 0}%)`,
-                  'Count',
+                  `${value} 格 (${total > 0 ? ((value / total) * 100).toFixed(1) : 0}%)`,
+                  '數量',
                 ]}
               />
               <Bar dataKey="value" radius={[0, 4, 4, 0]}>

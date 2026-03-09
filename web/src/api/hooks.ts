@@ -7,6 +7,7 @@ import type {
   DashboardStats,
   GridCell,
   Corridor,
+  CorridorComputeRequest,
   FAIData,
   WindRoseSector,
   TestResults,
@@ -17,6 +18,15 @@ import type {
   AreaPredictResponse,
   RouteAnalyzeResponse,
   RoutePlanResponse,
+  MonitorResponse,
+  BatchPointQuery,
+  BatchRiskResponse,
+  DerivedData,
+  FlightWindowsResponse,
+  DronePowerRequest,
+  DronePowerResponse,
+  MissionFeasibilityRequest,
+  MissionFeasibilityResponse,
 } from './types';
 
 // ─── Query Keys ────────────────────────────────────────────────
@@ -29,6 +39,7 @@ export const queryKeys = {
   fai: (height: HeightOption) => ['fai', height] as const,
   windRose: () => ['wind-rose'] as const,
   testResults: () => ['test-results'] as const,
+  monitor: () => ['monitor'] as const,
   forecast: (city: string, hours: number) => ['forecast', city, hours] as const,
   cwaStations: (region: string) => ['cwa-stations', region] as const,
 };
@@ -89,6 +100,14 @@ export function useCorridors() {
   });
 }
 
+// ─── Corridor Compute ─────────────────────────────────────────
+export function useCorridorCompute() {
+  return useMutation({
+    mutationFn: (req: CorridorComputeRequest) =>
+      apiClient.post<Corridor[]>('/corridors/compute', req),
+  });
+}
+
 // ─── FAI Data ──────────────────────────────────────────────────
 export function useFAIData(height: HeightOption) {
   return useQuery({
@@ -112,6 +131,16 @@ export function useTestResults() {
     queryKey: queryKeys.testResults(),
     queryFn: () => apiClient.get<TestResults>('/test-results'),
     staleTime: 30 * 1000, // 30 seconds - tests might rerun
+  });
+}
+
+// ─── Monitor ─────────────────────────────────────────────────
+export function useMonitor() {
+  return useQuery({
+    queryKey: queryKeys.monitor(),
+    queryFn: () => apiClient.get<MonitorResponse>('/monitor'),
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
   });
 }
 
@@ -173,6 +202,56 @@ export function useRouteAnalysis() {
   return useMutation({
     mutationFn: (req: { waypoints: [number, number][]; height?: number; drone_id?: string }) =>
       apiClient.post<RouteAnalyzeResponse>('/route/analyze', req),
+  });
+}
+
+// ─── Batch Risk Check ─────────────────────────────────────────
+export function useBatchRiskCheck() {
+  return useMutation({
+    mutationFn: (req: BatchPointQuery) =>
+      apiClient.post<BatchRiskResponse>('/risk/batch', req),
+  });
+}
+
+// ─── Derived Data ────────────────────────────────────────────
+export function useDerivedData(gridId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['derived', gridId] as const,
+    queryFn: () => apiClient.get<DerivedData>(`/derived/${gridId}`),
+    enabled: enabled && !!gridId,
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+// ─── Flight Windows ──────────────────────────────────────────
+export function useFlightWindows(params: {
+  lon?: number;
+  lat?: number;
+  drone_id?: string;
+  hours?: number;
+  min_hours?: number;
+}, enabled = true) {
+  return useQuery({
+    queryKey: ['flight-windows', params] as const,
+    queryFn: () => apiClient.get<FlightWindowsResponse>('/forecast/flight-windows', params),
+    enabled: enabled && params.lon != null && params.lat != null,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ─── Drone Power ─────────────────────────────────────────────
+export function useDronePower() {
+  return useMutation({
+    mutationFn: (req: DronePowerRequest) =>
+      apiClient.post<DronePowerResponse>('/drone/power', req),
+  });
+}
+
+// ─── Mission Feasibility ─────────────────────────────────────
+export function useMissionFeasibility() {
+  return useMutation({
+    mutationFn: (req: MissionFeasibilityRequest) =>
+      apiClient.post<MissionFeasibilityResponse>('/drone/mission', req),
   });
 }
 

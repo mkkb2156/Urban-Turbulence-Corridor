@@ -14,25 +14,25 @@ export default function TestRunner() {
         {triggerMutation.isPending ? (
           <>
             <Loader2 size={16} className="animate-spin" />
-            Running Tests...
+            測試執行中...
           </>
         ) : (
           <>
             <Play size={16} />
-            Run All Tests
+            執行所有測試
           </>
         )}
       </button>
 
       {triggerMutation.isSuccess && (
         <span className="text-xs text-green-600 dark:text-green-400">
-          Test run triggered successfully
+          測試已成功觸發
         </span>
       )}
 
       {triggerMutation.isError && (
         <span className="text-xs text-red-600 dark:text-red-400">
-          Failed to trigger test run
+          觸發測試失敗
         </span>
       )}
     </div>

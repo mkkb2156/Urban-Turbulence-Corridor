@@ -7,6 +7,8 @@ import RiskPage from './pages/RiskPage';
 import FAIPage from './pages/FAIPage';
 import AnalysisPage from './pages/AnalysisPage';
 import TestDashboardPage from './pages/TestDashboardPage';
+import GuidePage from './pages/GuidePage';
+import MonitorPage from './pages/MonitorPage';
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
           <Route path="/risk" element={<RiskPage />} />
           <Route path="/fai" element={<FAIPage />} />
           <Route path="/tests" element={<TestDashboardPage />} />
+          <Route path="/guide" element={<GuidePage />} />
+          <Route path="/monitor" element={<MonitorPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
