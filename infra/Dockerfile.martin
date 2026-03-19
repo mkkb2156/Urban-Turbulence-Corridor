@@ -1,0 +1,7 @@
+FROM ghcr.io/maplibre/martin:latest
+
+COPY services/tiles/config.yaml /config.yaml
+
+EXPOSE 3000
+
+CMD ["--config", "/config.yaml"]

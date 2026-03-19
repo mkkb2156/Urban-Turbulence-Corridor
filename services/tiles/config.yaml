@@ -1,0 +1,85 @@
+# Martin — PostGIS 向量圖磚伺服器設定
+# UTC v4: 5 個圖層
+
+listen_addresses: "0.0.0.0:3000"
+
+postgres:
+  connection_string: "${DATABASE_URL}"
+  pool_size: 10
+  auto_publish: false
+
+  tables:
+    risk_grid:
+      schema: public
+      table: grid_cells
+      srid: 4326
+      geometry_column: geom
+      id_column: grid_id
+      minzoom: 10
+      maxzoom: 18
+      properties:
+        risk_level: varchar
+        risk_score: float4
+        wind_speed_80m: float4
+        lcz_class: int4
+        fai_max: float4
+        turbulence_intensity: float4
+        gust_factor: float4
+        shelter_index: float4
+
+    corridors:
+      schema: public
+      table: wind_corridors
+      srid: 4326
+      geometry_column: geom
+      id_column: corridor_id
+      minzoom: 10
+      maxzoom: 18
+      properties:
+        name: varchar
+        type: varchar
+        mean_wind_speed: float4
+        dominant_direction: varchar
+        wind_direction_deg: float4
+
+    buildings_3d:
+      schema: public
+      table: buildings
+      srid: 4326
+      geometry_column: geom
+      minzoom: 14
+      maxzoom: 18
+      properties:
+        height: float4
+        floor_count: int4
+
+    airspace:
+      schema: public
+      table: airspace_zones
+      srid: 4326
+      geometry_column: geom
+      minzoom: 8
+      maxzoom: 18
+      properties:
+        zone_type: varchar
+        max_height_m: float4
+
+    morphology:
+      schema: public
+      table: grid_cells
+      srid: 4326
+      geometry_column: geom
+      id_column: grid_id
+      minzoom: 10
+      maxzoom: 18
+      properties:
+        z0: float4
+        zd: float4
+        svf: float4
+        bcr: float4
+        fai_ne: float4
+        fai_sw: float4
+        fai_max: float4
+        mean_height: float4
+        max_height: float4
+        lcz_class: int4

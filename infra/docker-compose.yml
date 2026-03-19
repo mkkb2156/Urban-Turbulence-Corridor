@@ -1,0 +1,58 @@
+version: "3.9"
+services:
+  postgres:
+    image: timescale/timescaledb-ha:pg16-latest
+    environment:
+      POSTGRES_DB: utc_db
+      POSTGRES_USER: utc
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/home/postgres/pgdata/data
+
+  martin:
+    image: ghcr.io/maplibre/martin:latest
+    command: --config /config.yaml
+    volumes:
+      - ../services/tiles/config.yaml:/config.yaml:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://utc:${POSTGRES_PASSWORD}@postgres/utc_db
+
+  api:
+    build:
+      context: ../services/api
+      dockerfile: ../../infra/Dockerfile.api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://utc:${POSTGRES_PASSWORD}@postgres/utc_db
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: utc_db
+      DB_USER: utc
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ../services/api:/app
+
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: ../../infra/Dockerfile.web
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8000
+      VITE_TILES_URL: http://localhost:3000
+    volumes:
+      - ../apps/web:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:

@@ -29,7 +29,6 @@ data/raw/
 data/processed/
 data/output/
 *.osm.pbf
-*.pbf
 
 # Jupyter
 .ipynb_checkpoints/
@@ -48,8 +47,9 @@ Thumbs.db
 docker-compose.override.yml
 
 # Node.js (frontend)
-web/node_modules/
-web/dist/
-web/coverage/
-web/.vitest/
+node_modules/
+apps/web/dist/
+apps/web/coverage/
+apps/web/.vitest/
 cache/
+pnpm-lock.yaml

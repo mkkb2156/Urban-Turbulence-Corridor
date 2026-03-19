@@ -1,63 +1,38 @@
-# UTC — Urban Turbulence Corridor
+# UTC v4 — Urban Turbulence Corridor
 
-台灣城市風廊（Urban Wind Corridor）資料層，供無人機低空作業風險評估使用。
+台灣城市風廊圖層系統 — 無人機低空作業風險評估平台
 
-## 概述
+**決策工具，不是資料瀏覽器。一個問題，一個答案：「今天能飛嗎？」**
 
-UTC 從開放資料自動計算城市風廊與風險等級：
+## 技術棧
 
-1. 取得 3D 建物與地形資料
-2. 計算都市形態學指標（FAI、SVF、粗糙度）
-3. 辨識風廊路徑（LCP）
-4. 估算風速風險
-5. 透過 API 與 Web 地圖呈現
+- **前端**: React 19 + MapLibre GL v4 + Deck.gl v9 + WebGL GPU 風場粒子
+- **後端**: FastAPI + PostGIS + 27 API endpoints
+- **圖磚**: Martin (Rust) — PostGIS → MVT 向量圖磚
+- **部署**: Fly.io (Martin + API) + Cloudflare Pages
 
 ## 快速開始
 
 ```bash
-# 建立虛擬環境（請在專案根目錄執行）
-uv venv
-source .venv/bin/activate
-uv pip install -e ".[dev]"
-# 若上面失敗，可改為：uv pip install geopandas 等依賴後再跑測試
-# 注意：uv 指令後勿在同一行加註解，會出現 Failed to parse: # 錯誤
+# 前端
+cd apps/web && npm install && npm run dev
 
-# 設定環境變數
-cp .env.example .env
-# 編輯 .env 填入 CWA_API_KEY 等
+# 後端
+cd services/api && pip install -r requirements.txt
+uvicorn main:app --reload
 
-# 執行 Phase 1 pipeline（台北）
-python scripts/run_pipeline.py --city taipei --grid-size 100
-
-# 執行測試
-pytest tests/ -v
+# Docker 全端
+cd infra && docker compose up
 ```
 
-## 開發指令
+## 核心功能
 
-```bash
-# 啟動前端開發伺服器
-cd web && npm run dev        # http://localhost:3000
-
-# 啟動 Vitest UI（瀏覽器測試介面）
-cd web && npm run test:ui    # http://localhost:51204/__vitest__/
-
-# 執行所有測試（前後端）
-bash scripts/run_tests.sh all
-
-# Watch mode
-bash scripts/run_tests.sh watch-backend    # pytest watch
-bash scripts/run_tests.sh watch-frontend   # vitest --ui
-```
-
-## 目前階段
-
-**Phase 1 — 形態學風險圖層**：FAI + LCP + 靜態風速估算
-
-## 座標系統
-
-- 內部計算：EPSG:3826（TWD97/TM2，公尺）
-- API 輸出：EPSG:4326（WGS84）
+- 單頁地圖 UX：點地圖 → 選機型 → 選時間 → 右側面板顯示 GO/CAUTION/NO-GO
+- WebGL GPU 粒子風場動畫（100K+ 粒子 60fps）
+- Martin 向量圖磚（支援 10 萬+ 網格）
+- 72h 風場預報 + 最佳飛行時段
+- 6 款 DJI 無人機安全閾值檢查
+- 電池消耗估算 + 風廊加速警告
 
 ## 授權
 
